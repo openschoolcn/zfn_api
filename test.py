@@ -15,7 +15,10 @@ test_term = "2"  # 查询学期（1-上|2-下）
 
 func_class = sys.argv[1]
 func = sys.argv[2]
-method = sys.argv[3]
+try:
+    method = sys.argv[3]
+except IndexError:
+    method = None
 
 if __name__ == "__main__":
     if method != "cookies":
@@ -40,6 +43,8 @@ if __name__ == "__main__":
             if result["code"] != 1000:
                 pprint(result)
                 sys.exit()
+            cookies = lgn.cookies
+        elif pre_login["code"] == 1000:
             cookies = lgn.cookies
         else:
             pprint(pre_login)
