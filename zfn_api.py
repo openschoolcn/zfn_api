@@ -360,7 +360,7 @@ class Info(object):
                         "upTime": self.upTime(re.findall(r"(\d+)", i["jc"])),
                         "courseTime": self.calTime(re.findall(r"(\d+)", i["jc"])),
                         "courseWeek": i.get("zcd"),
-                        "includeWeeks": self.calWeeks(re.findall(r"(\d+)", i["zcd"])),
+                        "includeWeeks": self.calWeeks(re.findall(r"[^,]+", i["zcd"])),
                         "exam": i.get("khfsmc"),
                         "campus": i.get("xqmc"),
                         "courseRoom": i.get("cdmc"),
@@ -1230,23 +1230,28 @@ class Info(object):
     @staticmethod
     def calWeeks(args):
         """返回课程所含周列表"""
-        lens = len(args)
-        dict = {
-            1: [int(args[0])],
-            2: [n for n in range(int(args[0]), int(args[1]) + 1)]
-            if lens == 2
-            else None,
-            3: [n for n in range(int(args[0]), int(args[1]) + 1)] + [int(args[2])]
-            if lens == 3
-            else None,
-            4: [n for n in range(int(args[0]), int(args[1]) + 1)]
-            + [m for m in range(int(args[2]), int(args[3]) + 1)]
-            if lens == 4
-            else None,
-        }
-        return (
-            dict.get(lens) if dict.get(lens) is not None else [n for n in range(1, 18)]
-        )
+        week_list = []
+        for item in args:
+            if "-" in item:
+                weeks_pair = re.findall(r"(\d+)", item)
+                if len(weeks_pair) != 2:
+                    continue
+                if "单" in item:
+                    for i in range(int(weeks_pair[0]), int(weeks_pair[1])+1):
+                        if i % 2 == 1:
+                            week_list.append(i)
+                elif "双" in item:
+                    for i in range(int(weeks_pair[0]), int(weeks_pair[1])+1):
+                        if i % 2 == 0:
+                            week_list.append(i)
+                else:
+                    for i in range(int(weeks_pair[0]), int(weeks_pair[1])+1):
+                        week_list.append(i)
+            else:
+                week_num = re.findall(r"(\d+)",item)
+                if len(week_num) == 1:
+                    week_list.append(week_num[0])
+        return week_list
 
 
 class Choose(object):
