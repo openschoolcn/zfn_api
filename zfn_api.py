@@ -651,7 +651,8 @@ class Info(object):
                 stream=True,
             )
             ts_point_find = re.findall(
-                r"通识(.*)&nbsp;要求学分:(\d+\.\d+)&nbsp;获得学分:(\d+\.\d+)&nbsp;&nbsp;未获得学分:(\d+\.\d+)&nbsp",
+                # r"通识(.*)&nbsp;要求学分:(\d+\.\d+)&nbsp;获得学分:(\d+\.\d+)&nbsp;&nbsp;未获得学分:(\d+\.\d+)&nbsp",
+                r"通识(.*)\* 要求学分 \*/\+\":([0-9]{1,}[.][0-9]*)(.*)\* 获得学分 \*/\+\":([0-9]{1,}[.][0-9]*)(.*)\* 未获得学分 \*/\+\":([0-9]{1,}[.][0-9]*)",
                 req_main.text,
             )
             ts_point_list = list(
@@ -663,7 +664,8 @@ class Info(object):
                 "tsn": ts_point_list[3],
             }
             tz_point_find = re.findall(
-                r"拓展(.*)&nbsp;要求学分:(\d+\.\d+)&nbsp;获得学分:(\d+\.\d+)&nbsp;&nbsp;未获得学分:(\d+\.\d+)&nbsp",
+                # r"拓展(.*)&nbsp;要求学分:(\d+\.\d+)&nbsp;获得学分:(\d+\.\d+)&nbsp;&nbsp;未获得学分:(\d+\.\d+)&nbsp",
+                r"拓展(.*)\* 要求学分 \*/\+\":([0-9]{1,}[.][0-9]*)(.*)\* 获得学分 \*/\+\":([0-9]{1,}[.][0-9]*)(.*)\* 未获得学分 \*/\+\":([0-9]{1,}[.][0-9]*)",
                 req_main.text,
             )
             tz_point_list = list(list({}.fromkeys(tz_point_find).keys())[0])
@@ -673,7 +675,8 @@ class Info(object):
                 "tzn": tz_point_list[3],
             }
             zy_point_find = re.findall(
-                r"专业(.*)&nbsp;要求学分:(\d+\.\d+)&nbsp;获得学分:(\d+\.\d+)&nbsp;&nbsp;未获得学分:(\d+\.\d+)&nbsp",
+                # r"专业(.*)&nbsp;要求学分:(\d+\.\d+)&nbsp;获得学分:(\d+\.\d+)&nbsp;&nbsp;未获得学分:(\d+\.\d+)&nbsp",
+                r"专业(.*)\* 要求学分 \*/\+\":([0-9]{1,}[.][0-9]*)(.*)\* 获得学分 \*/\+\":([0-9]{1,}[.][0-9]*)(.*)\* 未获得学分 \*/\+\":([0-9]{1,}[.][0-9]*)",
                 req_main.text,
             )
             zy_point_list = list(list({}.fromkeys(zy_point_find).keys())[0])
