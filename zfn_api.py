@@ -5,7 +5,6 @@ import re
 import os
 import time
 import traceback
-from urllib.parse import urljoin
 
 import requests
 import rsa
@@ -21,6 +20,10 @@ TIMESUP = config["timesUp"]
 TIMESDOWN = config["timesDown"]
 TIMEOUT = config["educationTimeout"]
 
+def urljoin(base, path):
+    if base.endswith('/'):
+        base = base[:-1]
+    return base + path
 
 class Login(object):
     """登录类"""
@@ -1253,7 +1256,7 @@ class Info(object):
             else:
                 week_num = re.findall(r"(\d+)",item)
                 if len(week_num) == 1:
-                    week_list.append(week_num[0])
+                    week_list.append(int(week_num[0]))
         return week_list
 
 
