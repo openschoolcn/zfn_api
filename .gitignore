@@ -2,3 +2,5 @@ kaptcha.png
 temp.json
 .vscode/
 __pycache__/
+
+config.json
