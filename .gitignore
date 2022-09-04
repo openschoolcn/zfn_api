@@ -4,3 +4,6 @@ temp.json
 __pycache__/
 
 config.json
+
+preview.pdf
+example.py
