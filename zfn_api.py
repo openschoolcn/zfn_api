@@ -68,7 +68,7 @@ class Client:
             modulus = req_pubkey["modulus"]
             exponent = req_pubkey["exponent"]
             if str(doc("input#yzm")) == "":
-                # 不需要验证码，TODO: 增加更多验证方式
+                # 不需要验证码
                 encrypt_password = self.encrypt_password(password, modulus, exponent)
                 # 登录数据
                 login_data = {
@@ -93,7 +93,7 @@ class Client:
                 self.cookies = self.sess.cookies.get_dict()
                 return {"code": 1000, "msg": "登录成功", "data": {"cookies": self.cookies}}
             else:
-                # 需要验证码，返回相关页面验证信息给用户
+                # 需要验证码，返回相关页面验证信息给用户，TODO: 增加更多验证方式
                 need_verify = True
                 req_kaptcha = self.sess.get(
                     self.kaptcha_url, headers=self.headers, timeout=TIMEOUT
@@ -598,7 +598,7 @@ class Client:
             "xm": name,
             "xnm": str(year),
             "xqm": str(term),
-            "xnmc": f"{year}-{int(year) + 1}",
+            "xnmc": f"{year}-{year+1}",
             "xqmmc": str(origin_term),
             "jgmc": "undefined",
             "xxdm": "",
@@ -691,7 +691,7 @@ class Client:
                 return {"code": 1006, "msg": "未登录或已过期，请重新登录"}
             notifications = req_notification.json()
             result = [
-                {"content": i.get("xxnr"), "create_time": i.get("cjsj")}
+                {**self.split_notifications(i), "create_time": i.get("cjsj")}
                 for i in notifications.get("items")
             ]
             return {"code": 1000, "msg": "获取消息成功", "data": result}
@@ -1278,6 +1278,15 @@ class Client:
                     schedule["courses"][sec]["sessions"]
                 )
         return schedule
+
+    @classmethod
+    def split_notifications(cls, item):
+        if not item.get("xxnr"):
+            return {"type": None, "content": None}
+        content_list = re.findall(r"(.*):(.*)", item["xxnr"])
+        if len(content_list) == 0:
+            return {"type": None, "content": item["xxnr"]}
+        return {"type": content_list[0][0], "content": content_list[0][1]}
 
     @classmethod
     def get_place(cls, place):
