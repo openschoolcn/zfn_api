@@ -25,6 +25,7 @@ def get_config(section: str, field: str):
 
 BASE_URL = get_config("school", "base_url")
 RASPISANIE = get_config("school", "raspisanie")
+DETAIL_CATEGORY_TYPE = get_config("school", "detail_category_type")
 TIMEOUT = get_config("request", "timeout")
 
 
@@ -394,22 +395,17 @@ class Client:
             if doc_main("h5").text() == "用户登录":
                 return {"code": 1006, "msg": "未登录或已过期，请重新登录"}
             sid = doc_main("form#form input#xh_id").attr("value")
-            map = {"通识": "general", "专业": "professional", "拓展": "extension"}
-            # allc_str = [allc.text() for allc in doc_main("font[size='2px']").items()]
             display_statistics = (
                 doc_main("div#alertBox").text().replace(" ", "").replace("\n", "")
             )
             statistics = self.get_academia_statistics(display_statistics)
-            type_statistics = self.get_academia_type_statistics(
-                int(sid[0:2]), map, req_main.text
-            )
+            type_statistics = self.get_academia_type_statistics(req_main.text)
             details = {}
-            map["其它"] = "other"
-            for type in map.keys():
-                details[map[type]] = self.sess.post(
+            for type in type_statistics.keys():
+                details[type] = self.sess.post(
                     url_info,
                     headers=self.headers,
-                    data={"xfyqjd_id": type_statistics[map[type]]["id"]},
+                    data={"xfyqjd_id": type_statistics[type]["id"]},
                     cookies=self.cookies,
                     timeout=TIMEOUT,
                     stream=True,
@@ -417,8 +413,8 @@ class Client:
             result = {
                 "statistics": statistics,
                 "details": {
-                    map[type]: {
-                        "credits": type_statistics[map[type]].get("credits"),
+                    type: {
+                        "credits": type_statistics[type]["credits"],
                         "items": [
                             {
                                 "course_id": i.get("KCH"),
@@ -427,16 +423,16 @@ class Client:
                                 "display_term": self.get_display_term(
                                     sid, i.get("JYXDXNM"), i.get("JYXDXQMC")
                                 ),
-                                "category": self.get_course_category(map[type], i),
+                                "category": self.get_course_category(type, i),
                                 "nature": i.get("KCXZMC"),
                                 "credit": self.align_floats(i.get("XF")),
                                 "max_grade": self.parse_int(i.get("MAXCJ")),
                                 "grade_point": self.align_floats(i.get("JD")),
                             }
-                            for i in details[map[type]]
+                            for i in details[type]
                         ],
                     }
-                    for type in map.keys()
+                    for type in type_statistics.keys()
                 },
             }
             return {"code": 1000, "msg": "获取学业情况成功", "data": result}
@@ -1061,7 +1057,7 @@ class Client:
 
     def get_course_category(self, type, item):
         """根据课程号获取类别"""
-        if type != "other":
+        if type not in DETAIL_CATEGORY_TYPE:
             return item.get("KCLBMC")
         if not item.get("KCH"):
             return None
@@ -1154,6 +1150,7 @@ class Client:
 
     @classmethod
     def get_academia_statistics(cls, display_statistics):
+        display_statistics = "".join(display_statistics.split())
         gpa_list = re.findall(r"([0-9]{1,}[.][0-9]*)", display_statistics)
         if len(gpa_list) == 0 or not cls.is_number(gpa_list[0]):
             gpa = None
@@ -1182,30 +1179,39 @@ class Client:
         }
 
     @classmethod
-    def get_academia_type_statistics(cls, grade: int, map: dict, content: str):
-        id_finder = re.findall(r"xfyqjd_id='(.*)' jdkcsx='1' leaf=''", content)
-        id_list = list({}.fromkeys(id_finder).keys())
-        id_finder_ext = re.findall(r"xfyqjd_id='(.*)' jdkcsx='2' leaf=''", content)
-        id_list_ext = list({}.fromkeys(id_finder_ext).keys())
-        # 根据学校自定义的培养计划，不同年级获取四项id的方法不同
-        result = {
-            "general": {"id": id_list[0]},
-            "professional": {"id": id_list[1]},
-            "extension": {"id": id_list[2]},
-            "other": {"id": id_list[3]} if grade >= 20 else {"id": id_list_ext[0]},
-        }
-        finder = lambda type: re.findall(
-            type
-            + r"(.*)\* 要求学分 \*/\+\":([0-9]{1,}[.][0-9]*)(.*)\* 获得学分 \*/\+\":([0-9]{1,}[.][0-9]*)(.*)\* 未获得学分 \*/\+\":([0-9]{1,}[.][0-9]*)",
+    def get_academia_type_statistics(cls, content: str):
+        finder = re.findall(
+            r"\"(.*)&nbsp.*要求学分.*:([0-9]{1,}[.][0-9]*|0|&nbsp;).*获得学分.*:([0-9]{1,}[.][0-9]*|0|&nbsp;).*未获得学分.*:([0-9]{1,}[.][0-9]*|0|&nbsp;)[\s\S]*?<span id='showKc(.*)'></span>",
             content,
         )
-        for type in map.keys():
-            credit_list = list(list({}.fromkeys(finder(type)).keys())[0])
-            result[map[type]]["credits"] = {
-                "required": credit_list[1],
-                "earned": credit_list[3],
-                "missed": credit_list[5],
+        finder_list = list({}.fromkeys(finder).keys())
+        academia_list = [
+            list(i)
+            for i in finder_list
+            if i[0] != "" and len(i[0]) <= 20 and "span" not in i[-1]
+        ]
+        sum_credit = (
+            sum([float(i[1]) for i in academia_list if cls.is_number(i[1])]) / 2
+        )
+        useless_types = []
+        for type in academia_list:
+            if not (cls.is_number(type[1]) and cls.is_number(type[2])):
+                continue
+            if float(type[1]) < float(type[2]) or float(type[1]) >= sum_credit:
+                useless_types.append(type)
+        for i in useless_types:
+            academia_list.remove(i)
+        result = {
+            i[0]: {
+                "id": i[-1],
+                "credits": {
+                    "required": i[1] if cls.is_number(i[1]) and i[1] != "0" else None,
+                    "earned": i[2] if cls.is_number(i[2]) and i[2] != "0" else None,
+                    "missed": i[3] if cls.is_number(i[3]) and i[3] != "0" else None,
+                },
             }
+            for i in academia_list
+        }
         return result
 
     @classmethod
@@ -1289,6 +1295,8 @@ class Client:
 
     @classmethod
     def is_number(cls, s):
+        if s == "":
+            return False
         try:
             float(s)
             return True
