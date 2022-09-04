@@ -83,7 +83,7 @@
             sys.exit()
 
     result = stu.get_info()  # 获取个人信息
-    # result = stu.get_grade(2021, 2)  # 获取成绩信息，若接口错误请添加 use_personal_info=True
+    # result = stu.get_grade(2021, 2)  # 获取成绩信息，若接口错误请添加 use_personal_info=True，只填年份获取全年
     # result = stu.get_schedule(2022, 1)  # 获取课程表信息
     # result = stu.get_academia()  # 获取学业生涯数据
     # result = stu.get_notifications()  # 获取通知消息

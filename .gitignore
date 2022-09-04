@@ -1,9 +1,7 @@
-kaptcha.png
-temp.json
 .vscode/
 __pycache__/
 
 config.json
-
 preview.pdf
 example.py
+kaptcha.png
