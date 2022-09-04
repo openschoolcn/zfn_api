@@ -25,6 +25,7 @@ def get_config(section: str, field: str):
 
 BASE_URL = get_config("school", "base_url")
 RASPISANIE = get_config("school", "raspisanie")
+IGNORE_TYPE = get_config("school", "ignore_type")
 DETAIL_CATEGORY_TYPE = get_config("school", "detail_category_type")
 TIMEOUT = get_config("request", "timeout")
 
@@ -433,6 +434,7 @@ class Client:
                         ],
                     }
                     for type in type_statistics.keys()
+                    if len(details[type]) > 0
                 },
             }
             return {"code": 1000, "msg": "获取学业情况成功", "data": result}
@@ -1188,19 +1190,11 @@ class Client:
         academia_list = [
             list(i)
             for i in finder_list
-            if i[0] != "" and len(i[0]) <= 20 and "span" not in i[-1]
+            if i[0] != ""  # 类型名称不为空
+            and len(i[0]) <= 20  # 避免正则到首部过长类型名称
+            and "span" not in i[-1]  # 避免正则到尾部过长类型名称
+            and i[0] not in IGNORE_TYPE  # 忽略的类型名称
         ]
-        sum_credit = (
-            sum([float(i[1]) for i in academia_list if cls.is_number(i[1])]) / 2
-        )
-        useless_types = []
-        for type in academia_list:
-            if not (cls.is_number(type[1]) and cls.is_number(type[2])):
-                continue
-            if float(type[1]) < float(type[2]) or float(type[1]) >= sum_credit:
-                useless_types.append(type)
-        for i in useless_types:
-            academia_list.remove(i)
         result = {
             i[0]: {
                 "id": i[-1],
