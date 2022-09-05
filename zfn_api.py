@@ -200,7 +200,7 @@ class Client:
             info = req_info.json()
             result = {
                 "name": info.get("xm"),
-                "student_id": info.get("xh"),
+                "sid": info.get("xh"),
                 "college_name": info.get("zsjg_id", info.get("jg_id")),
                 "major_name": info.get("zszyh_id", info.get("zyh_id")),
                 "class_name": info.get("bh_id", info.get("xjztdm")),
@@ -329,7 +329,7 @@ class Client:
             if doc("h5").text() == "用户登录":
                 return {"code": 1006, "msg": "未登录或已过期，请重新登录"}
             schedule = req_schedule.json()
-            if not schedule.get("xsxx"):
+            if not schedule.get("kbList"):
                 return {"code": 1005, "msg": "获取内容为空"}
             result = {
                 "name": schedule["xsxx"].get("XM"),
@@ -339,20 +339,20 @@ class Client:
                         "course_id": i.get("kch_id"),
                         "title": i.get("kcmc"),
                         "teacher": i.get("xm"),
+                        "class_name": i.get("jxbmc"),
+                        "credit": self.align_floats(i.get("xf")),
                         "weekday": self.parse_int(i.get("xqj")),
+                        "time": self.display_course_time(i.get("jc")),
                         "sessions": i.get("jc"),
                         "list_sessions": self.list_sessions(i.get("jc")),
-                        "time": self.display_course_time(i.get("jc")),
                         "weeks": i.get("zcd"),
                         "list_weeks": self.list_weeks(i.get("zcd")),
                         "evaluation_mode": i.get("khfsmc"),
                         "campus": i.get("xqmc"),
                         "place": i.get("cdmc"),
-                        "class_name": i.get("jxbmc"),
                         "hours_composition": i.get("kcxszc"),
                         "weekly_hours": self.parse_int(i.get("zhxs")),
                         "total_hours": self.parse_int(i.get("zxs")),
-                        "credit": self.align_floats(i.get("xf")),
                     }
                     for i in schedule["kbList"]
                 ],
@@ -416,7 +416,7 @@ class Client:
                 "details": {
                     type: {
                         "credits": type_statistics[type]["credits"],
-                        "items": [
+                        "courses": [
                             {
                                 "course_id": i.get("KCH"),
                                 "title": i.get("KCMC"),
@@ -424,9 +424,9 @@ class Client:
                                 "display_term": self.get_display_term(
                                     sid, i.get("JYXDXNM"), i.get("JYXDXQMC")
                                 ),
+                                "credit": self.align_floats(i.get("XF")),
                                 "category": self.get_course_category(type, i),
                                 "nature": i.get("KCXZMC"),
-                                "credit": self.align_floats(i.get("XF")),
                                 "max_grade": self.parse_int(i.get("MAXCJ")),
                                 "grade_point": self.align_floats(i.get("JD")),
                             }
@@ -737,14 +737,14 @@ class Client:
                         "class_id": i.get("jxb_id"),
                         "do_id": i.get("do_jxb_id"),
                         "title": i.get("kcmc"),
-                        "category": i.get("kklxmc"),
-                        "teacher": (re.findall(r"/(.*?)/", i.get("jsxx")))[0],
                         "teacher_id": (re.findall(r"(.*?\d+)/", i.get("jsxx")))[0],
+                        "teacher": (re.findall(r"/(.*?)/", i.get("jsxx")))[0],
+                        "credit": float(i.get("xf", 0)),
+                        "category": i.get("kklxmc"),
                         "capacity": int(i.get("jxbrs", 0)),
                         "selected_number": int(i.get("yxzrs", 0)),
                         "place": self.get_place(i.get("jxdd")),
                         "time": self.get_course_time(i.get("sksj")),
-                        "credit": float(i.get("xf", 0)),
                         "optional": int(i.get("zixf", 0)),
                         "waiting": i.get("sxbj"),
                     }
@@ -907,14 +907,14 @@ class Client:
                         "class_id": j.get("jxb_id"),
                         "do_id": j.get("do_jxb_id"),
                         "title": j.get("kcmc"),
-                        "teacher": (re.findall(r"/(.*?)/", j.get("jsxx")))[0],
                         "teacher_id": (re.findall(r"(.*?\d+)/", j.get("jsxx")))[0],
+                        "teacher": (re.findall(r"/(.*?)/", j.get("jsxx")))[0],
+                        "credit": float(j.get("xf"), 0),
                         "kklxdm": head_data[f"bkk{block}_kklxdm"],
                         "capacity": int(i.get("jxbrl", 0)),
                         "selected_number": int(i.get("yxzrs", 0)),
                         "place": self.get_place(i.get("jxdd")),
                         "time": self.get_course_time(i.get("sksj")),
-                        "credit": float(j.get("xf"), 0),
                     }
                     for j in temp_list
                 ],

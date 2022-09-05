@@ -97,3 +97,49 @@
         f.write(file_result)
 
   ```
+
+## 部分数据字段说明
+
+```json
+{
+  // 成绩
+  "course_id": "课程号",
+  "title": "课程标题",
+  "teacher": "任课教师",
+  "class_name": "教学班名称",
+  "credit": "学分",
+  "category": "课程类别",
+  "nature": "课程性质",
+  "grade": "成绩",
+  "grade_point": "绩点",
+  "grade_nature": "成绩性质",
+  "start_college": "开课院系",
+  "mark": "",
+  // 课表
+  "weekday": "星期几",
+  "time": "上课时间",
+  "sessions": "上课节数",
+  "list_sessions": "开课节数列表",
+  "weeks": "开课周数",
+  "list_weeks": "开课周数列表",
+  "evaluation_mode": "考核方式",
+  "campus": "上课校区",
+  "place": "上课场地",
+  "hours_composition": "课程学时组成",
+  "weekly_hours": "每周学时",
+  "total_hours": "总学时",
+  // 学业生涯
+  "situation": "修读情况",
+  "display_term": "修读学期",
+  "max_grade": "最佳成绩",
+  // 选课
+  "class_id": "教学班ID",
+  "do_id": "执行ID",
+  "teacher_id": "教师ID",
+  "kklxdm": "板块课ID",
+  "capacity": "教学班容量",
+  "selected_number": "已选人数",
+  "optional": "是否自选",
+  "waiting": ""
+}
+```
