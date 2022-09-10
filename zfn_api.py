@@ -395,6 +395,8 @@ class Client:
             doc_main = pq(req_main.text)
             if doc_main("h5").text() == "用户登录":
                 return {"code": 1006, "msg": "未登录或已过期，请重新登录"}
+            if doc_main("div.alert-danger") != "":
+                return {"code": 998, "msg": doc_main("div.alert-danger").text()}
             sid = doc_main("form#form input#xh_id").attr("value")
             display_statistics = (
                 doc_main("div#alertBox").text().replace(" ", "").replace("\n", "")
