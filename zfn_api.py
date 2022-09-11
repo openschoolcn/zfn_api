@@ -199,8 +199,8 @@ class Client:
                 return {"code": 1006, "msg": "未登录或已过期，请重新登录"}
             info = req_info.json()
             result = {
-                "name": info.get("xm"),
                 "sid": info.get("xh"),
+                "name": info.get("xm"),
                 "college_name": info.get("zsjg_id", info.get("jg_id")),
                 "major_name": info.get("zszyh_id", info.get("zyh_id")),
                 "class_name": info.get("bh_id", info.get("xjztdm")),
@@ -244,6 +244,7 @@ class Client:
             if use_personal_info
             else "/cjcx/cjcx_cxXsgrcj.html?doType=query&gnmkdm=N305005",
         )
+        temp_term = term
         term = term**2 * 3
         term = "" if term == 0 else term
         data = {
@@ -275,8 +276,10 @@ class Client:
             if not grade_items:
                 return {"code": 1005, "msg": "获取内容为空"}
             result = {
+                "sid": grade_items[0]["xh"],
                 "name": grade_items[0]["xm"],
-                "gpa": self.get_gpa(),
+                "year": year,
+                "term": temp_term,
                 "count": len(grade_items),
                 "courses": [
                     {
@@ -313,6 +316,7 @@ class Client:
     def get_schedule(self, year: int, term: int):
         """获取课程表信息"""
         url = urljoin(BASE_URL, "/kbcx/xskbcx_cxXsKb.html?gnmkdm=N2151")
+        temp_term = term
         term = term**2 * 3
         data = {"xnm": str(year), "xqm": str(term)}
         try:
@@ -332,7 +336,10 @@ class Client:
             if not schedule.get("kbList"):
                 return {"code": 1005, "msg": "获取内容为空"}
             result = {
+                "sid": schedule["xsxx"].get("XH"),
                 "name": schedule["xsxx"].get("XM"),
+                "year": year,
+                "term": temp_term,
                 "count": len(schedule["kbList"]),
                 "courses": [
                     {
@@ -395,12 +402,13 @@ class Client:
             doc_main = pq(req_main.text)
             if doc_main("h5").text() == "用户登录":
                 return {"code": 1006, "msg": "未登录或已过期，请重新登录"}
-            if doc_main("div.alert-danger") != "":
+            if str(doc_main("div.alert-danger")) != "":
                 return {"code": 998, "msg": doc_main("div.alert-danger").text()}
             sid = doc_main("form#form input#xh_id").attr("value")
             display_statistics = (
                 doc_main("div#alertBox").text().replace(" ", "").replace("\n", "")
             )
+            sid = doc_main("input#xh_id").attr("value")
             statistics = self.get_academia_statistics(display_statistics)
             type_statistics = self.get_academia_type_statistics(req_main.text)
             details = {}
@@ -414,6 +422,7 @@ class Client:
                     stream=True,
                 ).json()
             result = {
+                "sid": sid,
                 "statistics": statistics,
                 "details": {
                     type: {
@@ -716,6 +725,7 @@ class Client:
             url = urljoin(
                 BASE_URL, "/xsxk/zzxkyzb_cxZzxkYzbChoosedDisplay.html?gnmkdm=N253512"
             )
+            temp_term = term
             term = term**2 * 3
             data = {"xkxnm": str(year), "xkxqm": str(term)}
             req_selected = self.sess.post(
@@ -732,6 +742,8 @@ class Client:
                 return {"code": 1006, "msg": "未登录或已过期，请重新登录"}
             selected = req_selected.json()
             result = {
+                "year": year,
+                "term": temp_term,
                 "count": len(selected),
                 "items": [
                     {
@@ -784,7 +796,7 @@ class Client:
             doc = pq(req_head_data.text)
             if doc("h5").text() == "用户登录":
                 return {"code": 1006, "msg": "未登录或已过期，请重新登录"}
-            if doc("div.nodata") != "":
+            if str(doc("div.nodata")) != "":
                 return {"code": 998, "msg": doc("div.nodata").text()}
             got_credit_list = [i for i in doc("font[color='red']").items()]
             if len(got_credit_list) == 0:
