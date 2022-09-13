@@ -424,8 +424,9 @@ class Client:
             result = {
                 "sid": sid,
                 "statistics": statistics,
-                "details": {
-                    type: {
+                "details": [
+                    {
+                        "type": type,
                         "credits": type_statistics[type]["credits"],
                         "courses": [
                             {
@@ -446,7 +447,7 @@ class Client:
                     }
                     for type in type_statistics.keys()
                     if len(details[type]) > 0
-                },
+                ],
             }
             return {"code": 1000, "msg": "获取学业情况成功", "data": result}
         except exceptions.Timeout:
@@ -745,7 +746,7 @@ class Client:
                 "year": year,
                 "term": temp_term,
                 "count": len(selected),
-                "items": [
+                "courses": [
                     {
                         "course_id": i.get("kch"),
                         "class_id": i.get("jxb_id"),
@@ -915,7 +916,7 @@ class Client:
 
             result = {
                 "count": len(temp_list),
-                "items": [
+                "courses": [
                     {
                         "course_id": j["kch_id"],
                         "class_id": j.get("jxb_id"),
