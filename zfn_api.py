@@ -18,7 +18,7 @@ def get_config(section: str, field: str):
     filename = os.path.join(os.path.dirname(__file__), "config.json")
     if not os.path.exists(filename):
         raise Exception("配置文件不存在")
-    with open(filename, "r") as f:
+    with open(filename, "r", encoding="UTF-8") as f:
         config = json.loads(f.read())
     return config.get(section, {}).get(field)
 
