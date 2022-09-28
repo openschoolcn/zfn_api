@@ -155,10 +155,9 @@ class Client:
             if str(tips) != "":
                 if "验证码" in tips.text():
                     return {"code": 1004, "msg": "验证码输入错误"}
-                elif "用户名或密码" in tips.text():
+                if "用户名或密码" in tips.text():
                     return {"code": 1002, "msg": "用户名或密码不正确"}
-                else:
-                    return {"code": 998, "msg": tips.text()}
+                return {"code": 998, "msg": tips.text()}
             self.cookies = self.sess.cookies.get_dict()
             # 不同学校系统兼容差异
             if not self.cookies.get("route"):
@@ -1116,7 +1115,7 @@ class Client:
     def align_floats(cls, floats):
         if not floats:
             return None
-        elif floats == "无":
+        if floats == "无":
             return "0.0"
         return format(float(floats), ".1f")
 
