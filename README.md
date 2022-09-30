@@ -143,3 +143,7 @@
   "waiting": ""
 }
 ```
+
+## 星图
+
+[![Stargazers over time](https://starchart.cc/openschoolcn/zfn_api.svg)](https://starchart.cc/openschoolcn/zfn_api)
