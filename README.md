@@ -44,14 +44,13 @@
 
 ## Tips⚠️
 
-- 请先在 `config.json` 中修改教务系统 `base_url` 和上下课时间 `raspisanie` 。
-  - 只需填写`https://xxx.com`到 base_url 中，拼接后与类中 `self.xxurl` 不同的路径部分在 API 代码内增删改。
-- 学业生涯数据为教务系统 **“学生学业情况查询”** 页面内容，获取数据时请留意 `config.json` 中 `ignore_type` 和 `detail_category_type`。
+- 上下课时间 `raspisanie` 若与 `zfn_api.py` 中不一致，请自行按照相关格式编写。
+- 学业生涯数据为教务系统 **“学生学业情况查询”** 页面内容，获取数据时请留意 `ignore_type` 和 `detail_category_type`。
   - `ignore_type` 表示需要忽略的最顶部根类型，如 “主修”，“20XX 级 XX 专业” 等无用类型，**可留空数组，对结果无影响**。
   - `detail_category_type` 表示需要详细获取课程分类的类型，如 “其他课程” 需获取该网课属于什么类等，**可留空数组**。
 - 教务系统的 cookies 在不同学校统一认证系统不同，**若系统开启了验证码且 cookies 格式内容与默认有出入**，请修改 `zfn_api.py` 中 `login_with_kaptcha()` 中兼容差异注释部分。
 - 兼容导致 学业生涯数据 PDF 表的导出会出现问题，待排查。
-- 一个简单的测试示例
+- 提供了可供 appwrite 等平台调用的云函数 `main.py` ，也有一个简单的测试示例
 
   ```python
     # example.py
@@ -63,8 +62,13 @@
     from zfn_api import Client
 
     cookies = {}
+    base_url = "https://xxx.com"
+    raspisanie = []
+    ignore_type = []
+    detail_category_type = []
+    timeout = 5
 
-    stu = Client(cookies=cookies)
+    stu = Client(cookies=cookies, base_url=base_url, raspisanie=raspisanie, ignore_type=ignore_type, detail_category_type=detail_category_type, timeout=timeout)
 
     if cookies == {}:
         lgn = stu.login("sid", "password")

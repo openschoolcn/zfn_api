@@ -1,7 +1,6 @@
 import base64
 import binascii
 import json
-import os
 import re
 import time
 import traceback
@@ -13,28 +12,40 @@ import rsa
 from pyquery import PyQuery as pq
 from requests import exceptions
 
-
-def get_config(section: str, field: str):
-    filename = os.path.join(os.path.dirname(__file__), "config.json")
-    if not os.path.exists(filename):
-        raise Exception("配置文件不存在")
-    with open(filename, "r", encoding="UTF-8") as f:
-        config = json.loads(f.read())
-    return config.get(section, {}).get(field)
-
-
-BASE_URL = get_config("school", "base_url")
-RASPISANIE = get_config("school", "raspisanie")
-IGNORE_TYPE = get_config("school", "ignore_type")
-DETAIL_CATEGORY_TYPE = get_config("school", "detail_category_type")
-TIMEOUT = get_config("request", "timeout")
+RASPIANIE = [
+    ["8:00", "8:40"],
+    ["8:45", "9:25"],
+    ["9:30", "10:10"],
+    ["10:30", "11:10"],
+    ["11:15", "11:55"],
+    ["14:30", "15:10"],
+    ["15:15", "15:55"],
+    ["16:05", "16:45"],
+    ["16:50", "17:30"],
+    ["18:40", "19:20"],
+    ["19:25", "20:05"],
+    ["20:10", "20:50"],
+    ["20:55", "21:35"],
+]
 
 
 class Client:
-    def __init__(self, cookies={}):
-        self.key_url = urljoin(BASE_URL, "/xtgl/login_getPublicKey.html")
-        self.login_url = urljoin(BASE_URL, "/xtgl/login_slogin.html")
-        self.kaptcha_url = urljoin(BASE_URL, "/kaptcha")
+    raspisanie = []
+    ignore_type = []
+
+    def __init__(self, cookies={}, **kwargs):
+        # 基础配置
+        self.base_url = kwargs.get("base_url")
+        self.raspisanie = kwargs.get("raspisanie", RASPIANIE)
+        self.ignore_type = kwargs.get("ignore_type", [])
+        self.detail_category_type = kwargs.get("detail_category_type", [])
+        self.timeout = kwargs.get("timeout", 3)
+        Client.raspisanie = self.raspisanie
+        Client.ignore_type = self.ignore_type
+
+        self.key_url = urljoin(self.base_url, "/xtgl/login_getPublicKey.html")
+        self.login_url = urljoin(self.base_url, "/xtgl/login_slogin.html")
+        self.kaptcha_url = urljoin(self.base_url, "/kaptcha")
         self.headers = requests.utils.default_headers()
         self.headers["Referer"] = self.login_url
         self.headers[
@@ -53,7 +64,7 @@ class Client:
         try:
             # 登录页
             req_csrf = self.sess.get(
-                self.login_url, headers=self.headers, timeout=TIMEOUT
+                self.login_url, headers=self.headers, timeout=self.timeout
             )
             if req_csrf.status_code != 200:
                 return {"code": 2333, "msg": "教务系统挂了"}
@@ -63,7 +74,7 @@ class Client:
             pre_cookies = self.sess.cookies.get_dict()
             # 获取publicKey并加密密码
             req_pubkey = self.sess.get(
-                self.key_url, headers=self.headers, timeout=TIMEOUT
+                self.key_url, headers=self.headers, timeout=self.timeout
             ).json()
             modulus = req_pubkey["modulus"]
             exponent = req_pubkey["exponent"]
@@ -81,38 +92,36 @@ class Client:
                     self.login_url,
                     headers=self.headers,
                     data=login_data,
-                    timeout=TIMEOUT,
+                    timeout=self.timeout,
                 )
                 doc = pq(req_login.text)
                 tips = doc("p#tips")
                 if str(tips) != "":
                     if "用户名或密码" in tips.text():
                         return {"code": 1002, "msg": "用户名或密码不正确"}
-                    else:
-                        return {"code": 998, "msg": tips.text()}
+                    return {"code": 998, "msg": tips.text()}
                 self.cookies = self.sess.cookies.get_dict()
                 return {"code": 1000, "msg": "登录成功", "data": {"cookies": self.cookies}}
-            else:
-                # 需要验证码，返回相关页面验证信息给用户，TODO: 增加更多验证方式
-                need_verify = True
-                req_kaptcha = self.sess.get(
-                    self.kaptcha_url, headers=self.headers, timeout=TIMEOUT
-                )
-                kaptcha_pic = base64.b64encode(req_kaptcha.content).decode()
-                return {
-                    "code": 1001,
-                    "msg": "获取验证码成功",
-                    "data": {
-                        "sid": sid,
-                        "csrf_token": csrf_token,
-                        "cookies": pre_cookies,
-                        "password": password,
-                        "modulus": modulus,
-                        "exponent": exponent,
-                        "kaptcha_pic": kaptcha_pic,
-                        "timestamp": time.time(),
-                    },
-                }
+            # 需要验证码，返回相关页面验证信息给用户，TODO: 增加更多验证方式
+            need_verify = True
+            req_kaptcha = self.sess.get(
+                self.kaptcha_url, headers=self.headers, timeout=self.timeout
+            )
+            kaptcha_pic = base64.b64encode(req_kaptcha.content).decode()
+            return {
+                "code": 1001,
+                "msg": "获取验证码成功",
+                "data": {
+                    "sid": sid,
+                    "csrf_token": csrf_token,
+                    "cookies": pre_cookies,
+                    "password": password,
+                    "modulus": modulus,
+                    "exponent": exponent,
+                    "kaptcha_pic": kaptcha_pic,
+                    "timestamp": time.time(),
+                },
+            }
         except exceptions.Timeout:
             msg = "获取验证码超时" if need_verify else "登录超时"
             return {"code": 1003, "msg": msg}
@@ -145,7 +154,7 @@ class Client:
                 headers=self.headers,
                 cookies=cookies,
                 data=login_data,
-                timeout=TIMEOUT,
+                timeout=self.timeout,
             )
             if req_login.status_code != 200:
                 return {"code": 2333, "msg": "教务系统挂了"}
@@ -183,13 +192,13 @@ class Client:
 
     def get_info(self):
         """获取个人信息"""
-        url = urljoin(BASE_URL, "/xsxxxggl/xsxxwh_cxCkDgxsxx.html?gnmkdm=N100801")
+        url = urljoin(self.base_url, "/xsxxxggl/xsxxwh_cxCkDgxsxx.html?gnmkdm=N100801")
         try:
             req_info = self.sess.get(
                 url,
                 headers=self.headers,
                 cookies=self.cookies,
-                timeout=TIMEOUT,
+                timeout=self.timeout,
             )
             if req_info.status_code != 200:
                 return {"code": 2333, "msg": "教务系统挂了"}
@@ -215,7 +224,7 @@ class Client:
                 "phone_number": info.get("sjhm"),
                 "parents_number": info.get("gddh"),
                 "email": info.get("dzyx"),
-                "birth_day": info.get("csrq"),
+                "birthday": info.get("csrq"),
                 "id_number": info.get("zjhm"),
             }
             return {"code": 1000, "msg": "获取个人信息成功", "data": result}
@@ -238,7 +247,7 @@ class Client:
         use_personal_info: 是否使用获取个人信息接口获取成绩
         """
         url = urljoin(
-            BASE_URL,
+            self.base_url,
             "/cjcx/cjcx_cxDgXscj.html?doType=query&gnmkdm=N305005"
             if use_personal_info
             else "/cjcx/cjcx_cxXsgrcj.html?doType=query&gnmkdm=N305005",
@@ -263,7 +272,7 @@ class Client:
                 headers=self.headers,
                 data=data,
                 cookies=self.cookies,
-                timeout=TIMEOUT,
+                timeout=self.timeout,
             )
             if req_grade.status_code != 200:
                 return {"code": 2333, "msg": "教务系统挂了"}
@@ -314,7 +323,7 @@ class Client:
 
     def get_schedule(self, year: int, term: int):
         """获取课程表信息"""
-        url = urljoin(BASE_URL, "/kbcx/xskbcx_cxXsKb.html?gnmkdm=N2151")
+        url = urljoin(self.base_url, "/kbcx/xskbcx_cxXsKb.html?gnmkdm=N2151")
         temp_term = term
         term = term**2 * 3
         data = {"xnm": str(year), "xqm": str(term)}
@@ -324,7 +333,7 @@ class Client:
                 headers=self.headers,
                 data=data,
                 cookies=self.cookies,
-                timeout=TIMEOUT,
+                timeout=self.timeout,
             )
             if req_schedule.status_code != 200:
                 return {"code": 2333, "msg": "教务系统挂了"}
@@ -382,18 +391,18 @@ class Client:
     def get_academia(self):
         """获取学业生涯情况"""
         url_main = urljoin(
-            BASE_URL,
+            self.base_url,
             "/xsxy/xsxyqk_cxXsxyqkIndex.html?gnmkdm=N105515&layout=default",
         )
         url_info = urljoin(
-            BASE_URL, "/xsxy/xsxyqk_cxJxzxjhxfyqKcxx.html?gnmkdm=N105515"
+            self.base_url, "/xsxy/xsxyqk_cxJxzxjhxfyqKcxx.html?gnmkdm=N105515"
         )
         try:
             req_main = self.sess.get(
                 url_main,
                 headers=self.headers,
                 cookies=self.cookies,
-                timeout=TIMEOUT,
+                timeout=self.timeout,
                 stream=True,
             )
             if req_main.status_code != 200:
@@ -417,7 +426,7 @@ class Client:
                     headers=self.headers,
                     data={"xfyqjd_id": type_statistics[type]["id"]},
                     cookies=self.cookies,
-                    timeout=TIMEOUT,
+                    timeout=self.timeout,
                     stream=True,
                 ).json()
             result = {
@@ -464,13 +473,13 @@ class Client:
 
     def get_academia_pdf(self):
         """获取学业生涯（学生成绩总表）pdf"""
-        url_view = urljoin(BASE_URL, "/bysxxcx/xscjzbdy_dyXscjzbView.html")
-        url_window = urljoin(BASE_URL, "/bysxxcx/xscjzbdy_dyCjdyszxView.html")
-        url_policy = urljoin(BASE_URL, "/xtgl/bysxxcx/xscjzbdy_cxXsCount.html")
-        url_filetype = urljoin(BASE_URL, "/bysxxcx/xscjzbdy_cxGswjlx.html")
-        url_common = urljoin(BASE_URL, "/common/common_cxJwxtxx.html")
-        url_file = urljoin(BASE_URL, "/bysxxcx/xscjzbdy_dyList.html")
-        url_progress = urljoin(BASE_URL, "/xtgl/progress_cxProgressStatus.html")
+        url_view = urljoin(self.base_url, "/bysxxcx/xscjzbdy_dyXscjzbView.html")
+        url_window = urljoin(self.base_url, "/bysxxcx/xscjzbdy_dyCjdyszxView.html")
+        url_policy = urljoin(self.base_url, "/xtgl/bysxxcx/xscjzbdy_cxXsCount.html")
+        url_filetype = urljoin(self.base_url, "/bysxxcx/xscjzbdy_cxGswjlx.html")
+        url_common = urljoin(self.base_url, "/common/common_cxJwxtxx.html")
+        url_file = urljoin(self.base_url, "/bysxxcx/xscjzbdy_dyList.html")
+        url_progress = urljoin(self.base_url, "/xtgl/progress_cxProgressStatus.html")
         data = {
             "gsdygx": "10628-zw-mrgs",
             "ids": "",
@@ -497,7 +506,7 @@ class Client:
                 data=data_view,
                 params=data_view,
                 cookies=self.cookies,
-                timeout=TIMEOUT,
+                timeout=self.timeout,
             )
             if req_view.status_code != 200:
                 return {"code": 2333, "msg": "教务系统挂了"}
@@ -512,7 +521,7 @@ class Client:
                 data=data_window,
                 params=data_params,
                 cookies=self.cookies,
-                timeout=TIMEOUT,
+                timeout=self.timeout,
             )
             # 许可接口
             data_policy = data
@@ -523,7 +532,7 @@ class Client:
                 data=data_policy,
                 params=data_params,
                 cookies=self.cookies,
-                timeout=TIMEOUT,
+                timeout=self.timeout,
             )
             # 文件类型接口
             data_filetype = data_policy
@@ -533,7 +542,7 @@ class Client:
                 data=data_filetype,
                 params=data_params,
                 cookies=self.cookies,
-                timeout=TIMEOUT,
+                timeout=self.timeout,
             )
             # Common接口
             self.sess.post(
@@ -542,7 +551,7 @@ class Client:
                 data=data_params,
                 params=data_params,
                 cookies=self.cookies,
-                timeout=TIMEOUT,
+                timeout=self.timeout,
             )
             # 获取PDF文件URL
             req_file = self.sess.post(
@@ -551,7 +560,7 @@ class Client:
                 data=data,
                 params=data_params,
                 cookies=self.cookies,
-                timeout=TIMEOUT,
+                timeout=self.timeout,
             )
             doc = pq(req_file.text)
             if "错误" in doc("title").text():
@@ -568,7 +577,7 @@ class Client:
                 data=data_progress,
                 params=data_progress,
                 cookies=self.cookies,
-                timeout=TIMEOUT,
+                timeout=self.timeout,
             )
             # 生成PDF文件URL
             pdf = (
@@ -579,10 +588,10 @@ class Client:
             )
             # 下载PDF文件
             req_pdf = self.sess.get(
-                urljoin(BASE_URL, pdf),
+                urljoin(self.base_url, pdf),
                 headers=self.headers,
                 cookies=self.cookies,
-                timeout=TIMEOUT + 2,
+                timeout=self.timeout + 2,
             )
             result = req_pdf.content  # 二进制内容
             return {"code": 1000, "msg": "获取学生成绩总表pdf成功", "data": result}
@@ -601,8 +610,8 @@ class Client:
 
     def get_schedule_pdf(self, year: int, term: int, name: str = "导出"):
         """获取课表pdf"""
-        url_policy = urljoin(BASE_URL, "/kbdy/bjkbdy_cxXnxqsfkz.html")
-        url_file = urljoin(BASE_URL, "/kbcx/xskbcx_cxXsShcPdf.html")
+        url_policy = urljoin(self.base_url, "/kbdy/bjkbdy_cxXnxqsfkz.html")
+        url_file = urljoin(self.base_url, "/kbcx/xskbcx_cxXsShcPdf.html")
         origin_term = term
         term = term**2 * 3
         data = {
@@ -637,7 +646,7 @@ class Client:
                 data=data,
                 params=pilicy_params,
                 cookies=self.cookies,
-                timeout=TIMEOUT,
+                timeout=self.timeout,
             )
             if req_policy.status_code != 200:
                 return {"code": 2333, "msg": "教务系统挂了"}
@@ -652,7 +661,7 @@ class Client:
                 data=data,
                 params=file_params,
                 cookies=self.cookies,
-                timeout=TIMEOUT,
+                timeout=self.timeout,
             )
             doc = pq(req_file.text)
             if "错误" in doc("title").text():
@@ -675,7 +684,7 @@ class Client:
 
     def get_notifications(self):
         """获取通知消息"""
-        url = urljoin(BASE_URL, "/xtgl/index_cxDbsy.html?doType=query")
+        url = urljoin(self.base_url, "/xtgl/index_cxDbsy.html?doType=query")
         data = {
             "sfyy": "0",  # 是否已阅，未阅未1，已阅为2
             "flag": "1",
@@ -693,7 +702,7 @@ class Client:
                 headers=self.headers,
                 data=data,
                 cookies=self.cookies,
-                timeout=TIMEOUT,
+                timeout=self.timeout,
             )
             if req_notification.status_code != 200:
                 return {"code": 2333, "msg": "教务系统挂了"}
@@ -723,7 +732,8 @@ class Client:
         """获取已选课程信息"""
         try:
             url = urljoin(
-                BASE_URL, "/xsxk/zzxkyzb_cxZzxkYzbChoosedDisplay.html?gnmkdm=N253512"
+                self.base_url,
+                "/xsxk/zzxkyzb_cxZzxkYzbChoosedDisplay.html?gnmkdm=N253512",
             )
             temp_term = term
             term = term**2 * 3
@@ -733,7 +743,7 @@ class Client:
                 data=data,
                 headers=self.headers,
                 cookies=self.cookies,
-                timeout=TIMEOUT,
+                timeout=self.timeout,
             )
             if req_selected.status_code != 200:
                 return {"code": 2333, "msg": "教务系统挂了"}
@@ -785,11 +795,14 @@ class Client:
         try:
             # 获取head_data
             url_head = urljoin(
-                BASE_URL,
+                self.base_url,
                 "/xsxk/zzxkyzb_cxZzxkYzbIndex.html?gnmkdm=N253512&layout=default",
             )
             req_head_data = self.sess.get(
-                url_head, headers=self.headers, cookies=self.cookies, timeout=TIMEOUT
+                url_head,
+                headers=self.headers,
+                cookies=self.cookies,
+                timeout=self.timeout,
             )
             if req_head_data.status_code != 200:
                 return {"code": 2333, "msg": "教务系统挂了"}
@@ -823,7 +836,7 @@ class Client:
                 head_data[str(name)] = str(value)
 
             url_display = urljoin(
-                BASE_URL, "/xsxk/zzxkyzb_cxZzxkYzbDisplay.html?gnmkdm=N253512"
+                self.base_url, "/xsxk/zzxkyzb_cxZzxkYzbDisplay.html?gnmkdm=N253512"
             )
             display_req_data = {
                 "xkkz_id": head_data[f"bkk{block}_xkkz_id"],
@@ -835,7 +848,7 @@ class Client:
                 headers=self.headers,
                 data=display_req_data,
                 cookies=self.cookies,
-                timeout=TIMEOUT,
+                timeout=self.timeout,
             )
             doc_display = pq(req_display_data.text)
             display_data = {}
@@ -847,10 +860,10 @@ class Client:
 
             # 获取课程列表
             url_kch = urljoin(
-                BASE_URL, "/xsxk/zzxkyzb_cxZzxkYzbPartDisplay.html?gnmkdm=N253512"
+                self.base_url, "/xsxk/zzxkyzb_cxZzxkYzbPartDisplay.html?gnmkdm=N253512"
             )
             url_bkk = urljoin(
-                BASE_URL, "/xsxk/zzxkyzb_cxJxbWithKchZzxkYzb.html?gnmkdm=N253512"
+                self.base_url, "/xsxk/zzxkyzb_cxJxbWithKchZzxkYzb.html?gnmkdm=N253512"
             )
             term = term**2 * 3
             kch_data = {
@@ -876,7 +889,7 @@ class Client:
                 headers=self.headers,
                 data=kch_data,
                 cookies=self.cookies,
-                timeout=TIMEOUT,
+                timeout=self.timeout,
             )
             jkch_res = kch_res.json()
             bkk_data = {
@@ -903,7 +916,7 @@ class Client:
                 headers=self.headers,
                 data=bkk_data,
                 cookies=self.cookies,
-                timeout=TIMEOUT,
+                timeout=self.timeout,
             )
             jbkk_res = bkk_res.json()
             if block != 3 and (len(jkch_res["tmpList"]) != len(jbkk_res)):
@@ -959,7 +972,7 @@ class Client:
         """选课"""
         try:
             url_select = urljoin(
-                BASE_URL, "/xsxk/zzxkyzb_xkBcZyZzxkYzb.html?gnmkdm=N253512"
+                self.base_url, "/xsxk/zzxkyzb_xkBcZyZzxkYzb.html?gnmkdm=N253512"
             )
             term = term**2 * 3
             select_data = {
@@ -985,7 +998,7 @@ class Client:
                 headers=self.headers,
                 data=select_data,
                 cookies=self.cookies,
-                timeout=TIMEOUT,
+                timeout=self.timeout,
             )
             if req_select.status_code != 200:
                 return {"code": 2333, "msg": "教务系统挂了"}
@@ -1011,7 +1024,7 @@ class Client:
         """取消选课"""
         try:
             url_cancel = urljoin(
-                BASE_URL, "/xsxk/zzxkyzb_tuikBcZzxkYzb.html?gnmkdm=N253512"
+                self.base_url, "/xsxk/zzxkyzb_tuikBcZzxkYzb.html?gnmkdm=N253512"
             )
             term = term**2 * 3
             cancel_data = {
@@ -1025,7 +1038,7 @@ class Client:
                 headers=self.headers,
                 data=cancel_data,
                 cookies=self.cookies,
-                timeout=TIMEOUT,
+                timeout=self.timeout,
             )
             if req_cancel.status_code != 200:
                 return {"code": 2333, "msg": "教务系统挂了"}
@@ -1052,14 +1065,14 @@ class Client:
     def get_gpa(self):
         """获取GPA"""
         url = urljoin(
-            BASE_URL,
+            self.base_url,
             "/xsxy/xsxyqk_cxXsxyqkIndex.html?gnmkdm=N105515&layout=default",
         )
         req_gpa = self.sess.get(
             url,
             headers=self.headers,
             cookies=self.cookies,
-            timeout=TIMEOUT,
+            timeout=self.timeout,
         )
         doc = pq(req_gpa.text)
         if doc("h5").text() == "用户登录":
@@ -1073,16 +1086,16 @@ class Client:
 
     def get_course_category(self, type, item):
         """根据课程号获取类别"""
-        if type not in DETAIL_CATEGORY_TYPE:
+        if type not in self.detail_category_type:
             return item.get("KCLBMC")
         if not item.get("KCH"):
             return None
-        url = urljoin(BASE_URL, f"/jxjhgl/common_cxKcJbxx.html?id={item['KCH']}")
+        url = urljoin(self.base_url, f"/jxjhgl/common_cxKcJbxx.html?id={item['KCH']}")
         req_category = self.sess.get(
             url,
             headers=self.headers,
             cookies=self.cookies,
-            timeout=TIMEOUT,
+            timeout=self.timeout,
         )
         doc = pq(req_category.text)
         ths = doc("th")
@@ -1124,8 +1137,8 @@ class Client:
         if not sessions:
             return None
         args = re.findall(r"(\d+)", sessions)
-        start_time = RASPISANIE[int(args[0]) + 1][0]
-        end_time = RASPISANIE[int(args[0]) + 1][1]
+        start_time = cls.raspisanie[int(args[0]) + 1][0]
+        end_time = cls.raspisanie[int(args[0]) + 1][1]
         return f"{start_time}~{end_time}"
 
     @classmethod
@@ -1207,7 +1220,7 @@ class Client:
             if i[0] != ""  # 类型名称不为空
             and len(i[0]) <= 20  # 避免正则到首部过长类型名称
             and "span" not in i[-1]  # 避免正则到尾部过长类型名称
-            and i[0] not in IGNORE_TYPE  # 忽略的类型名称
+            and i[0] not in cls.ignore_type  # 忽略的类型名称
         ]
         result = {
             i[0]: {
