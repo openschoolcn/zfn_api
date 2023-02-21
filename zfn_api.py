@@ -126,9 +126,9 @@ class Client:
             msg = "获取验证码超时" if need_verify else "登录超时"
             return {"code": 1003, "msg": msg}
         except (
-                exceptions.RequestException,
-                json.decoder.JSONDecodeError,
-                AttributeError,
+            exceptions.RequestException,
+            json.decoder.JSONDecodeError,
+            AttributeError,
         ):
             traceback.print_exc()
             return {"code": 2333, "msg": "请重试，若多次失败可能是系统错误维护或需更新接口"}
@@ -138,7 +138,7 @@ class Client:
             return {"code": 999, "msg": f"{msg}：{str(e)}"}
 
     def login_with_kaptcha(
-            self, sid, csrf_token, cookies, password, modulus, exponent, kaptcha, **kwargs
+        self, sid, csrf_token, cookies, password, modulus, exponent, kaptcha, **kwargs
     ):
         """需要验证码的登陆"""
         try:
@@ -180,9 +180,9 @@ class Client:
         except exceptions.Timeout:
             return {"code": 1003, "msg": "登录超时"}
         except (
-                exceptions.RequestException,
-                json.decoder.JSONDecodeError,
-                AttributeError,
+            exceptions.RequestException,
+            json.decoder.JSONDecodeError,
+            AttributeError,
         ):
             traceback.print_exc()
             return {"code": 2333, "msg": "请重试，若多次失败可能是系统错误维护或需更新接口"}
@@ -242,9 +242,9 @@ class Client:
         except exceptions.Timeout:
             return {"code": 1003, "msg": "获取个人信息超时"}
         except (
-                exceptions.RequestException,
-                json.decoder.JSONDecodeError,
-                AttributeError,
+            exceptions.RequestException,
+            json.decoder.JSONDecodeError,
+            AttributeError,
         ):
             traceback.print_exc()
             return {"code": 2333, "msg": "请重试，若多次失败可能是系统错误维护或需更新接口"}
@@ -380,9 +380,9 @@ class Client:
         except exceptions.Timeout:
             return {"code": 1003, "msg": "获取成绩超时"}
         except (
-                exceptions.RequestException,
-                json.decoder.JSONDecodeError,
-                AttributeError,
+            exceptions.RequestException,
+            json.decoder.JSONDecodeError,
+            AttributeError,
         ):
             traceback.print_exc()
             return {"code": 2333, "msg": "请重试，若多次失败可能是系统错误维护或需更新接口"}
@@ -447,9 +447,9 @@ class Client:
         except exceptions.Timeout:
             return {"code": 1003, "msg": "获取课表超时"}
         except (
-                exceptions.RequestException,
-                json.decoder.JSONDecodeError,
-                AttributeError,
+            exceptions.RequestException,
+            json.decoder.JSONDecodeError,
+            AttributeError,
         ):
             traceback.print_exc()
             return {"code": 2333, "msg": "请重试，若多次失败可能是系统错误维护或需更新接口"}
@@ -530,9 +530,9 @@ class Client:
         except exceptions.Timeout:
             return {"code": 1003, "msg": "获取学业情况超时"}
         except (
-                exceptions.RequestException,
-                json.decoder.JSONDecodeError,
-                AttributeError,
+            exceptions.RequestException,
+            json.decoder.JSONDecodeError,
+            AttributeError,
         ):
             traceback.print_exc()
             return {"code": 2333, "msg": "请重试，若多次失败可能是系统错误维护或需更新接口"}
@@ -667,9 +667,9 @@ class Client:
         except exceptions.Timeout:
             return {"code": 1003, "msg": "获取成绩总表pdf超时"}
         except (
-                exceptions.RequestException,
-                json.decoder.JSONDecodeError,
-                AttributeError,
+            exceptions.RequestException,
+            json.decoder.JSONDecodeError,
+            AttributeError,
         ):
             traceback.print_exc()
             return {"code": 2333, "msg": "请重试，若多次失败可能是系统错误维护或需更新接口"}
@@ -741,9 +741,9 @@ class Client:
         except exceptions.Timeout:
             return {"code": 1003, "msg": "获取课程表pdf超时"}
         except (
-                exceptions.RequestException,
-                json.decoder.JSONDecodeError,
-                AttributeError,
+            exceptions.RequestException,
+            json.decoder.JSONDecodeError,
+            AttributeError,
         ):
             traceback.print_exc()
             return {"code": 2333, "msg": "请重试，若多次失败可能是系统错误维护或需更新接口"}
@@ -787,9 +787,9 @@ class Client:
         except exceptions.Timeout:
             return {"code": 1003, "msg": "获取消息超时"}
         except (
-                exceptions.RequestException,
-                json.decoder.JSONDecodeError,
-                AttributeError,
+            exceptions.RequestException,
+            json.decoder.JSONDecodeError,
+            AttributeError,
         ):
             traceback.print_exc()
             return {"code": 2333, "msg": "请重试，若多次失败可能是系统错误维护或需更新接口"}
@@ -848,9 +848,9 @@ class Client:
         except exceptions.Timeout:
             return {"code": 1003, "msg": "获取已选课程超时"}
         except (
-                exceptions.RequestException,
-                json.decoder.JSONDecodeError,
-                AttributeError,
+            exceptions.RequestException,
+            json.decoder.JSONDecodeError,
+            AttributeError,
         ):
             traceback.print_exc()
             return {"code": 2333, "msg": "请重试，若多次失败可能是系统错误维护或需更新接口"}
@@ -1019,9 +1019,9 @@ class Client:
         except exceptions.Timeout:
             return {"code": 1003, "msg": "获取板块课信息超时"}
         except (
-                exceptions.RequestException,
-                json.decoder.JSONDecodeError,
-                AttributeError,
+            exceptions.RequestException,
+            json.decoder.JSONDecodeError,
+            AttributeError,
         ):
             traceback.print_exc()
             return {"code": 2333, "msg": "请重试，若多次失败可能是系统错误维护或需更新接口"}
@@ -1030,13 +1030,13 @@ class Client:
             return {"code": 999, "msg": f"获取板块课信息时未记录的错误：{str(e)}"}
 
     def select_course(
-            self,
-            sid: str,
-            course_id: str,
-            do_id: str,
-            kklxdm: str,
-            year: int,
-            term: int,
+        self,
+        sid: str,
+        course_id: str,
+        do_id: str,
+        kklxdm: str,
+        year: int,
+        term: int,
     ):
         """选课"""
         try:
@@ -1079,9 +1079,9 @@ class Client:
         except exceptions.Timeout:
             return {"code": 1003, "msg": "选课超时"}
         except (
-                exceptions.RequestException,
-                json.decoder.JSONDecodeError,
-                AttributeError,
+            exceptions.RequestException,
+            json.decoder.JSONDecodeError,
+            AttributeError,
         ):
             traceback.print_exc()
             return {"code": 2333, "msg": "请重试，若多次失败可能是系统错误维护或需更新接口"}
@@ -1119,9 +1119,9 @@ class Client:
         except exceptions.Timeout:
             return {"code": 1003, "msg": "选课超时"}
         except (
-                exceptions.RequestException,
-                json.decoder.JSONDecodeError,
-                AttributeError,
+            exceptions.RequestException,
+            json.decoder.JSONDecodeError,
+            AttributeError,
         ):
             traceback.print_exc()
             return {"code": 2333, "msg": "请重试，若多次失败可能是系统错误维护或需更新接口"}
@@ -1335,10 +1335,10 @@ class Client:
                 if (schedule["courses"]).index(items) == count:  # 如果对比到自己就忽略
                     continue
                 elif (
-                        items["course_id"]
-                        == schedule["courses"][index]["course_id"]  # 同周同天同课程
-                        and items["weekday"] == schedule["courses"][index]["weekday"]
-                        and items["weeks"] == schedule["courses"][index]["weeks"]
+                    items["course_id"]
+                    == schedule["courses"][index]["course_id"]  # 同周同天同课程
+                    and items["weekday"] == schedule["courses"][index]["weekday"]
+                    and items["weeks"] == schedule["courses"][index]["weeks"]
                 ):
                     repetIndex.append(index)  # 满足条件记录索引
             count += 1  # 记录当前对比课程的索引
@@ -1349,10 +1349,10 @@ class Client:
             sec = repetIndex[r + 1]
             if len(re.findall(r"(\d+)", schedule["courses"][fir]["sessions"])) == 4:
                 schedule["courses"][fir]["sessions"] = (
-                        re.findall(r"(\d+)", schedule["courses"][fir]["sessions"])[0]
-                        + "-"
-                        + re.findall(r"(\d+)", schedule["courses"][fir]["sessions"])[1]
-                        + "节"
+                    re.findall(r"(\d+)", schedule["courses"][fir]["sessions"])[0]
+                    + "-"
+                    + re.findall(r"(\d+)", schedule["courses"][fir]["sessions"])[1]
+                    + "节"
                 )
                 schedule["courses"][fir]["list_sessions"] = cls.list_sessions(
                     schedule["courses"][fir]["sessions"]
@@ -1362,10 +1362,10 @@ class Client:
                 )
 
                 schedule["courses"][sec]["sessions"] = (
-                        re.findall(r"(\d+)", schedule["courses"][sec]["sessions"])[2]
-                        + "-"
-                        + re.findall(r"(\d+)", schedule["courses"][sec]["sessions"])[3]
-                        + "节"
+                    re.findall(r"(\d+)", schedule["courses"][sec]["sessions"])[2]
+                    + "-"
+                    + re.findall(r"(\d+)", schedule["courses"][sec]["sessions"])[3]
+                    + "节"
                 )
                 schedule["courses"][sec]["list_sessions"] = cls.list_sessions(
                     schedule["courses"][sec]["sessions"]
