@@ -126,9 +126,9 @@ class Client:
             msg = "获取验证码超时" if need_verify else "登录超时"
             return {"code": 1003, "msg": msg}
         except (
-            exceptions.RequestException,
-            json.decoder.JSONDecodeError,
-            AttributeError,
+                exceptions.RequestException,
+                json.decoder.JSONDecodeError,
+                AttributeError,
         ):
             traceback.print_exc()
             return {"code": 2333, "msg": "请重试，若多次失败可能是系统错误维护或需更新接口"}
@@ -138,7 +138,7 @@ class Client:
             return {"code": 999, "msg": f"{msg}：{str(e)}"}
 
     def login_with_kaptcha(
-        self, sid, csrf_token, cookies, password, modulus, exponent, kaptcha, **kwargs
+            self, sid, csrf_token, cookies, password, modulus, exponent, kaptcha, **kwargs
     ):
         """需要验证码的登陆"""
         try:
@@ -180,9 +180,9 @@ class Client:
         except exceptions.Timeout:
             return {"code": 1003, "msg": "登录超时"}
         except (
-            exceptions.RequestException,
-            json.decoder.JSONDecodeError,
-            AttributeError,
+                exceptions.RequestException,
+                json.decoder.JSONDecodeError,
+                AttributeError,
         ):
             traceback.print_exc()
             return {"code": 2333, "msg": "请重试，若多次失败可能是系统错误维护或需更新接口"}
@@ -190,7 +190,7 @@ class Client:
             traceback.print_exc()
             return {"code": 999, "msg": "验证码登录时未记录的错误：" + str(e)}
 
-    def get_info(self):
+    def get_info(self, sid):
         """获取个人信息"""
         url = urljoin(self.base_url, "/xsxxxggl/xsxxwh_cxCkDgxsxx.html?gnmkdm=N100801")
         try:
@@ -206,6 +206,17 @@ class Client:
             if doc("h5").text() == "用户登录":
                 return {"code": 1006, "msg": "未登录或已过期，请重新登录"}
             info = req_info.json()
+
+            if info is None:
+                _result = self._get_info(sid)
+                if _result['code'] == '2333':
+                    return {"code": 2333, "msg": _result['msg']}
+                elif _result['code'] == 1003:
+                    return {"code": 1003, "msg": _result['msg']}
+                elif _result['code'] == 999:
+                    return {"code": 999, "msg": _result['msg']}
+                elif _result['code'] == 1000:
+                    return {"code": 1000, "msg": _result['msg'], "data": _result['data']}
             result = {
                 "sid": info.get("xh"),
                 "name": info.get("xm"),
@@ -231,12 +242,70 @@ class Client:
         except exceptions.Timeout:
             return {"code": 1003, "msg": "获取个人信息超时"}
         except (
-            exceptions.RequestException,
-            json.decoder.JSONDecodeError,
-            AttributeError,
+                exceptions.RequestException,
+                json.decoder.JSONDecodeError,
+                AttributeError,
         ):
             traceback.print_exc()
             return {"code": 2333, "msg": "请重试，若多次失败可能是系统错误维护或需更新接口"}
+        except Exception as e:
+            traceback.print_exc()
+            return {"code": 999, "msg": "获取个人信息时未记录的错误：" + str(e)}
+
+    def _get_info(self, sid):
+
+        url = urljoin(self.base_url,
+                      f"/xsxxxggl/xsgrxxwh_cxXsgrxx.html?gnmkdm=N100801&layout=default&su={sid}")
+        _url = urljoin(self.base_url,
+                       f"/xszbbgl/xszbbgl_cxXszbbsqIndex.html?doType=details&_t={time.time()}&gnmkdm=N106005")
+        try:
+            req_info = self.sess.get(
+                url,
+                headers=self.headers,
+                cookies=self.cookies,
+                timeout=self.timeout,
+            )
+            _req_info = self.sess.post(
+                _url,
+                headers=self.headers,
+                cookies=self.cookies,
+                timeout=self.timeout,
+                data={
+                    'offDetails': 1,
+                    'gnmkdm': 'N106005',
+                    'czdmKey': 00
+                }
+            )
+
+            if req_info.status_code != 200:
+                return {"code": 2333, "msg": "教务系统挂了"}
+            doc = pq(req_info.text)
+            _doc = pq(_req_info.text)
+
+            if doc("h5").text() == "用户登录":
+                return {"code": 1006, "msg": "未登录或已过期，请重新登录"}
+
+            info = doc('p').filter('.form-control-static').text().split(' ')
+            info = info[2:len(info)]
+
+            _info = _doc('label').filter('.control-label').text().split(' ')
+
+            result = {
+                'sid': info[0],
+                'name': info[1],
+                'college_name': _info[5],
+                "email": info[6],
+                'major_name': _info[7],
+                'class_name': _info[11],
+                'phone_number': info[7],
+                'domicile': info[5],
+                "politicalStatus": info[4],
+                "national": info[3],
+                'enrollment_date': _info[9]
+            }
+            return {"code": 1000, "msg": "获取个人信息成功", "data": result}
+        except exceptions.Timeout:
+            return {"code": 1003, "msg": "获取个人信息超时"}
         except Exception as e:
             traceback.print_exc()
             return {"code": 999, "msg": "获取个人信息时未记录的错误：" + str(e)}
@@ -253,7 +322,7 @@ class Client:
             else "/cjcx/cjcx_cxXsgrcj.html?doType=query&gnmkdm=N305005",
         )
         temp_term = term
-        term = term**2 * 3
+        term = term ** 2 * 3
         term = "" if term == 0 else term
         data = {
             "xnm": str(year),  # 学年数
@@ -311,9 +380,9 @@ class Client:
         except exceptions.Timeout:
             return {"code": 1003, "msg": "获取成绩超时"}
         except (
-            exceptions.RequestException,
-            json.decoder.JSONDecodeError,
-            AttributeError,
+                exceptions.RequestException,
+                json.decoder.JSONDecodeError,
+                AttributeError,
         ):
             traceback.print_exc()
             return {"code": 2333, "msg": "请重试，若多次失败可能是系统错误维护或需更新接口"}
@@ -325,7 +394,7 @@ class Client:
         """获取课程表信息"""
         url = urljoin(self.base_url, "/kbcx/xskbcx_cxXsKb.html?gnmkdm=N2151")
         temp_term = term
-        term = term**2 * 3
+        term = term ** 2 * 3
         data = {"xnm": str(year), "xqm": str(term)}
         try:
             req_schedule = self.sess.post(
@@ -378,9 +447,9 @@ class Client:
         except exceptions.Timeout:
             return {"code": 1003, "msg": "获取课表超时"}
         except (
-            exceptions.RequestException,
-            json.decoder.JSONDecodeError,
-            AttributeError,
+                exceptions.RequestException,
+                json.decoder.JSONDecodeError,
+                AttributeError,
         ):
             traceback.print_exc()
             return {"code": 2333, "msg": "请重试，若多次失败可能是系统错误维护或需更新接口"}
@@ -461,9 +530,9 @@ class Client:
         except exceptions.Timeout:
             return {"code": 1003, "msg": "获取学业情况超时"}
         except (
-            exceptions.RequestException,
-            json.decoder.JSONDecodeError,
-            AttributeError,
+                exceptions.RequestException,
+                json.decoder.JSONDecodeError,
+                AttributeError,
         ):
             traceback.print_exc()
             return {"code": 2333, "msg": "请重试，若多次失败可能是系统错误维护或需更新接口"}
@@ -598,9 +667,9 @@ class Client:
         except exceptions.Timeout:
             return {"code": 1003, "msg": "获取成绩总表pdf超时"}
         except (
-            exceptions.RequestException,
-            json.decoder.JSONDecodeError,
-            AttributeError,
+                exceptions.RequestException,
+                json.decoder.JSONDecodeError,
+                AttributeError,
         ):
             traceback.print_exc()
             return {"code": 2333, "msg": "请重试，若多次失败可能是系统错误维护或需更新接口"}
@@ -613,12 +682,12 @@ class Client:
         url_policy = urljoin(self.base_url, "/kbdy/bjkbdy_cxXnxqsfkz.html")
         url_file = urljoin(self.base_url, "/kbcx/xskbcx_cxXsShcPdf.html")
         origin_term = term
-        term = term**2 * 3
+        term = term ** 2 * 3
         data = {
             "xm": name,
             "xnm": str(year),
             "xqm": str(term),
-            "xnmc": f"{year}-{year+1}",
+            "xnmc": f"{year}-{year + 1}",
             "xqmmc": str(origin_term),
             "jgmc": "undefined",
             "xxdm": "",
@@ -672,9 +741,9 @@ class Client:
         except exceptions.Timeout:
             return {"code": 1003, "msg": "获取课程表pdf超时"}
         except (
-            exceptions.RequestException,
-            json.decoder.JSONDecodeError,
-            AttributeError,
+                exceptions.RequestException,
+                json.decoder.JSONDecodeError,
+                AttributeError,
         ):
             traceback.print_exc()
             return {"code": 2333, "msg": "请重试，若多次失败可能是系统错误维护或需更新接口"}
@@ -718,9 +787,9 @@ class Client:
         except exceptions.Timeout:
             return {"code": 1003, "msg": "获取消息超时"}
         except (
-            exceptions.RequestException,
-            json.decoder.JSONDecodeError,
-            AttributeError,
+                exceptions.RequestException,
+                json.decoder.JSONDecodeError,
+                AttributeError,
         ):
             traceback.print_exc()
             return {"code": 2333, "msg": "请重试，若多次失败可能是系统错误维护或需更新接口"}
@@ -736,7 +805,7 @@ class Client:
                 "/xsxk/zzxkyzb_cxZzxkYzbChoosedDisplay.html?gnmkdm=N253512",
             )
             temp_term = term
-            term = term**2 * 3
+            term = term ** 2 * 3
             data = {"xkxnm": str(year), "xkxqm": str(term)}
             req_selected = self.sess.post(
                 url,
@@ -779,9 +848,9 @@ class Client:
         except exceptions.Timeout:
             return {"code": 1003, "msg": "获取已选课程超时"}
         except (
-            exceptions.RequestException,
-            json.decoder.JSONDecodeError,
-            AttributeError,
+                exceptions.RequestException,
+                json.decoder.JSONDecodeError,
+                AttributeError,
         ):
             traceback.print_exc()
             return {"code": 2333, "msg": "请重试，若多次失败可能是系统错误维护或需更新接口"}
@@ -865,7 +934,7 @@ class Client:
             url_bkk = urljoin(
                 self.base_url, "/xsxk/zzxkyzb_cxJxbWithKchZzxkYzb.html?gnmkdm=N253512"
             )
-            term = term**2 * 3
+            term = term ** 2 * 3
             kch_data = {
                 "bklx_id": head_data["bklx_id"],
                 "xqh_id": head_data["xqh_id"],
@@ -950,9 +1019,9 @@ class Client:
         except exceptions.Timeout:
             return {"code": 1003, "msg": "获取板块课信息超时"}
         except (
-            exceptions.RequestException,
-            json.decoder.JSONDecodeError,
-            AttributeError,
+                exceptions.RequestException,
+                json.decoder.JSONDecodeError,
+                AttributeError,
         ):
             traceback.print_exc()
             return {"code": 2333, "msg": "请重试，若多次失败可能是系统错误维护或需更新接口"}
@@ -961,20 +1030,20 @@ class Client:
             return {"code": 999, "msg": f"获取板块课信息时未记录的错误：{str(e)}"}
 
     def select_course(
-        self,
-        sid: str,
-        course_id: str,
-        do_id: str,
-        kklxdm: str,
-        year: int,
-        term: int,
+            self,
+            sid: str,
+            course_id: str,
+            do_id: str,
+            kklxdm: str,
+            year: int,
+            term: int,
     ):
         """选课"""
         try:
             url_select = urljoin(
                 self.base_url, "/xsxk/zzxkyzb_xkBcZyZzxkYzb.html?gnmkdm=N253512"
             )
-            term = term**2 * 3
+            term = term ** 2 * 3
             select_data = {
                 "jxb_ids": do_id,
                 "kch_id": course_id,
@@ -1010,9 +1079,9 @@ class Client:
         except exceptions.Timeout:
             return {"code": 1003, "msg": "选课超时"}
         except (
-            exceptions.RequestException,
-            json.decoder.JSONDecodeError,
-            AttributeError,
+                exceptions.RequestException,
+                json.decoder.JSONDecodeError,
+                AttributeError,
         ):
             traceback.print_exc()
             return {"code": 2333, "msg": "请重试，若多次失败可能是系统错误维护或需更新接口"}
@@ -1026,7 +1095,7 @@ class Client:
             url_cancel = urljoin(
                 self.base_url, "/xsxk/zzxkyzb_tuikBcZzxkYzb.html?gnmkdm=N253512"
             )
-            term = term**2 * 3
+            term = term ** 2 * 3
             cancel_data = {
                 "jxb_ids": do_id,
                 "kch_id": course_id,
@@ -1050,9 +1119,9 @@ class Client:
         except exceptions.Timeout:
             return {"code": 1003, "msg": "选课超时"}
         except (
-            exceptions.RequestException,
-            json.decoder.JSONDecodeError,
-            AttributeError,
+                exceptions.RequestException,
+                json.decoder.JSONDecodeError,
+                AttributeError,
         ):
             traceback.print_exc()
             return {"code": 2333, "msg": "请重试，若多次失败可能是系统错误维护或需更新接口"}
@@ -1218,9 +1287,9 @@ class Client:
             list(i)
             for i in finder_list
             if i[0] != ""  # 类型名称不为空
-            and len(i[0]) <= 20  # 避免正则到首部过长类型名称
-            and "span" not in i[-1]  # 避免正则到尾部过长类型名称
-            and i[0] not in cls.ignore_type  # 忽略的类型名称
+               and len(i[0]) <= 20  # 避免正则到首部过长类型名称
+               and "span" not in i[-1]  # 避免正则到尾部过长类型名称
+               and i[0] not in cls.ignore_type  # 忽略的类型名称
         ]
         result = {
             i[0]: {
@@ -1266,10 +1335,10 @@ class Client:
                 if (schedule["courses"]).index(items) == count:  # 如果对比到自己就忽略
                     continue
                 elif (
-                    items["course_id"]
-                    == schedule["courses"][index]["course_id"]  # 同周同天同课程
-                    and items["weekday"] == schedule["courses"][index]["weekday"]
-                    and items["weeks"] == schedule["courses"][index]["weeks"]
+                        items["course_id"]
+                        == schedule["courses"][index]["course_id"]  # 同周同天同课程
+                        and items["weekday"] == schedule["courses"][index]["weekday"]
+                        and items["weeks"] == schedule["courses"][index]["weeks"]
                 ):
                     repetIndex.append(index)  # 满足条件记录索引
             count += 1  # 记录当前对比课程的索引
@@ -1280,10 +1349,10 @@ class Client:
             sec = repetIndex[r + 1]
             if len(re.findall(r"(\d+)", schedule["courses"][fir]["sessions"])) == 4:
                 schedule["courses"][fir]["sessions"] = (
-                    re.findall(r"(\d+)", schedule["courses"][fir]["sessions"])[0]
-                    + "-"
-                    + re.findall(r"(\d+)", schedule["courses"][fir]["sessions"])[1]
-                    + "节"
+                        re.findall(r"(\d+)", schedule["courses"][fir]["sessions"])[0]
+                        + "-"
+                        + re.findall(r"(\d+)", schedule["courses"][fir]["sessions"])[1]
+                        + "节"
                 )
                 schedule["courses"][fir]["list_sessions"] = cls.list_sessions(
                     schedule["courses"][fir]["sessions"]
@@ -1293,10 +1362,10 @@ class Client:
                 )
 
                 schedule["courses"][sec]["sessions"] = (
-                    re.findall(r"(\d+)", schedule["courses"][sec]["sessions"])[2]
-                    + "-"
-                    + re.findall(r"(\d+)", schedule["courses"][sec]["sessions"])[3]
-                    + "节"
+                        re.findall(r"(\d+)", schedule["courses"][sec]["sessions"])[2]
+                        + "-"
+                        + re.findall(r"(\d+)", schedule["courses"][sec]["sessions"])[3]
+                        + "节"
                 )
                 schedule["courses"][sec]["list_sessions"] = cls.list_sessions(
                     schedule["courses"][sec]["sessions"]
