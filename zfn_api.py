@@ -209,14 +209,18 @@ class Client:
 
             if info is None:
                 _result = self._get_info(sid)
-                if _result['code'] == '2333':
-                    return {"code": 2333, "msg": _result['msg']}
-                elif _result['code'] == 1003:
-                    return {"code": 1003, "msg": _result['msg']}
-                elif _result['code'] == 999:
-                    return {"code": 999, "msg": _result['msg']}
-                elif _result['code'] == 1000:
-                    return {"code": 1000, "msg": _result['msg'], "data": _result['data']}
+                if _result["code"] == 2333:
+                    return {"code": 2333, "msg": _result["msg"]}
+                elif _result["code"] == 1003:
+                    return {"code": 1003, "msg": _result["msg"]}
+                elif _result["code"] == 999:
+                    return {"code": 999, "msg": _result["msg"]}
+                elif _result["code"] == 1000:
+                    return {
+                        "code": 1000,
+                        "msg": _result["msg"],
+                        "data": _result["data"],
+                    }
             result = {
                 "sid": info.get("xh"),
                 "name": info.get("xm"),
@@ -254,10 +258,14 @@ class Client:
 
     def _get_info(self, sid):
 
-        url = urljoin(self.base_url,
-                      f"/xsxxxggl/xsgrxxwh_cxXsgrxx.html?gnmkdm=N100801&layout=default&su={sid}")
-        _url = urljoin(self.base_url,
-                       f"/xszbbgl/xszbbgl_cxXszbbsqIndex.html?doType=details&_t={time.time()}&gnmkdm=N106005")
+        url = urljoin(
+            self.base_url,
+            f"/xsxxxggl/xsgrxxwh_cxXsgrxx.html?gnmkdm=N100801&layout=default&su={sid}",
+        )
+        _url = urljoin(
+            self.base_url,
+            f"/xszbbgl/xszbbgl_cxXszbbsqIndex.html?doType=details&_t={time.time()}&gnmkdm=N106005",
+        )
         try:
             req_info = self.sess.get(
                 url,
@@ -270,11 +278,7 @@ class Client:
                 headers=self.headers,
                 cookies=self.cookies,
                 timeout=self.timeout,
-                data={
-                    'offDetails': 1,
-                    'gnmkdm': 'N106005',
-                    'czdmKey': 00
-                }
+                data={"offDetails": 1, "gnmkdm": "N106005", "czdmKey": 00},
             )
 
             if req_info.status_code != 200:
@@ -285,23 +289,23 @@ class Client:
             if doc("h5").text() == "用户登录":
                 return {"code": 1006, "msg": "未登录或已过期，请重新登录"}
 
-            info = doc('p').filter('.form-control-static').text().split(' ')
-            info = info[2:len(info)]
+            info = doc("p").filter(".form-control-static").text().split(" ")
+            info = info[2 : len(info)]
 
-            _info = _doc('label').filter('.control-label').text().split(' ')
+            _info = _doc("label").filter(".control-label").text().split(" ")
 
             result = {
-                'sid': info[0],
-                'name': info[1],
-                'college_name': _info[5],
+                "sid": info[0],
+                "name": info[1],
+                "college_name": _info[5],
                 "email": info[6],
-                'major_name': _info[7],
-                'class_name': _info[11],
-                'phone_number': info[7],
-                'domicile': info[5],
-                "politicalStatus": info[4],
+                "major_name": _info[7],
+                "class_name": _info[11],
+                "phone_number": info[7],
+                "domicile": info[5],
+                "political_status": info[4],
                 "national": info[3],
-                'enrollment_date': _info[9]
+                "enrollment_date": _info[9],
             }
             return {"code": 1000, "msg": "获取个人信息成功", "data": result}
         except exceptions.Timeout:
@@ -322,7 +326,7 @@ class Client:
             else "/cjcx/cjcx_cxXsgrcj.html?doType=query&gnmkdm=N305005",
         )
         temp_term = term
-        term = term ** 2 * 3
+        term = term**2 * 3
         term = "" if term == 0 else term
         data = {
             "xnm": str(year),  # 学年数
@@ -394,7 +398,7 @@ class Client:
         """获取课程表信息"""
         url = urljoin(self.base_url, "/kbcx/xskbcx_cxXsKb.html?gnmkdm=N2151")
         temp_term = term
-        term = term ** 2 * 3
+        term = term**2 * 3
         data = {"xnm": str(year), "xqm": str(term)}
         try:
             req_schedule = self.sess.post(
@@ -682,7 +686,7 @@ class Client:
         url_policy = urljoin(self.base_url, "/kbdy/bjkbdy_cxXnxqsfkz.html")
         url_file = urljoin(self.base_url, "/kbcx/xskbcx_cxXsShcPdf.html")
         origin_term = term
-        term = term ** 2 * 3
+        term = term**2 * 3
         data = {
             "xm": name,
             "xnm": str(year),
@@ -805,7 +809,7 @@ class Client:
                 "/xsxk/zzxkyzb_cxZzxkYzbChoosedDisplay.html?gnmkdm=N253512",
             )
             temp_term = term
-            term = term ** 2 * 3
+            term = term**2 * 3
             data = {"xkxnm": str(year), "xkxqm": str(term)}
             req_selected = self.sess.post(
                 url,
@@ -934,7 +938,7 @@ class Client:
             url_bkk = urljoin(
                 self.base_url, "/xsxk/zzxkyzb_cxJxbWithKchZzxkYzb.html?gnmkdm=N253512"
             )
-            term = term ** 2 * 3
+            term = term**2 * 3
             kch_data = {
                 "bklx_id": head_data["bklx_id"],
                 "xqh_id": head_data["xqh_id"],
@@ -1043,7 +1047,7 @@ class Client:
             url_select = urljoin(
                 self.base_url, "/xsxk/zzxkyzb_xkBcZyZzxkYzb.html?gnmkdm=N253512"
             )
-            term = term ** 2 * 3
+            term = term**2 * 3
             select_data = {
                 "jxb_ids": do_id,
                 "kch_id": course_id,
@@ -1095,7 +1099,7 @@ class Client:
             url_cancel = urljoin(
                 self.base_url, "/xsxk/zzxkyzb_tuikBcZzxkYzb.html?gnmkdm=N253512"
             )
-            term = term ** 2 * 3
+            term = term**2 * 3
             cancel_data = {
                 "jxb_ids": do_id,
                 "kch_id": course_id,
@@ -1287,9 +1291,9 @@ class Client:
             list(i)
             for i in finder_list
             if i[0] != ""  # 类型名称不为空
-               and len(i[0]) <= 20  # 避免正则到首部过长类型名称
-               and "span" not in i[-1]  # 避免正则到尾部过长类型名称
-               and i[0] not in cls.ignore_type  # 忽略的类型名称
+            and len(i[0]) <= 20  # 避免正则到首部过长类型名称
+            and "span" not in i[-1]  # 避免正则到尾部过长类型名称
+            and i[0] not in cls.ignore_type  # 忽略的类型名称
         ]
         result = {
             i[0]: {
