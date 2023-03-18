@@ -256,60 +256,67 @@ class Client:
             traceback.print_exc()
             return {"code": 999, "msg": "获取个人信息时未记录的错误：" + str(e)}
 
-    def _get_info(self, sid):
-
-        url = urljoin(
-            self.base_url,
-            f"/xsxxxggl/xsgrxxwh_cxXsgrxx.html?gnmkdm=N100801&layout=default&su={sid}",
-        )
-        _url = urljoin(
-            self.base_url,
-            f"/xszbbgl/xszbbgl_cxXszbbsqIndex.html?doType=details&_t={time.time()}&gnmkdm=N106005",
-        )
+    def get_info_1(self):
+        """获取个人信息"""
+        url = urljoin(self.base_url, "/xsxxxggl/xsgrxxwh_cxXsgrxx.html?gnmkdm=N100801")
         try:
             req_info = self.sess.get(
-                url,
-                headers=self.headers,
-                cookies=self.cookies,
-                timeout=self.timeout,
+                url, headers=self.headers, cookies=self.cookies, timeout=self.timeout
             )
-            _req_info = self.sess.post(
-                _url,
-                headers=self.headers,
-                cookies=self.cookies,
-                timeout=self.timeout,
-                data={"offDetails": 1, "gnmkdm": "N106005", "czdmKey": 00},
-            )
-
-            if req_info.status_code != 200:
-                return {"code": 2333, "msg": "教务系统挂了"}
             doc = pq(req_info.text)
-            _doc = pq(_req_info.text)
-
             if doc("h5").text() == "用户登录":
                 return {"code": 1006, "msg": "未登录或已过期，请重新登录"}
-
-            info = doc("p").filter(".form-control-static").text().split(" ")
-            info = info[2 : len(info)]
-
-            _info = _doc("label").filter(".control-label").text().split(" ")
-
+            doc = pq(req_info.text)
+            pending_result = {}
+            # 学生基本信息
+            for ul_item in doc.find("div.row div.col-sm-6").items():
+                content = pq(ul_item).find('div.form-group')
+                # key = re.findall(r'^[\u4E00-\u9FA5A-Za-z0-9]+', pq(content).find('label.col-sm-4.control-label').text())[0]
+                key = pq(content).find('label.col-sm-4.control-label').text()
+                value = pq(content).find('div.col-sm-8 p.form-control-static').text()
+                # 到这一步，解析到的数据基本就是一个键值对形式的html数据了，比如"[学号：]:123456"
+                pending_result[key] = value
+            # 学生学籍信息，其他信息，联系方式
+            for ul_item in doc.find("div.row div.col-sm-4").items():
+                content = pq(ul_item).find('div.form-group')
+                key = pq(content).find('label.col-sm-4.control-label').text()
+                value = pq(content).find('div.col-sm-8 p.form-control-static').text()
+                # 到这一步，解析到的数据基本就是一个键值对形式的html数据了，比如"[学号：]:123456"
+                pending_result[key] = value
+            if pending_result["学号："] == '':
+                return {"code": 1014, "msg": "当前学年学期无学生时盒数据，您可能已经毕业了。\n\n如果是专升本同学，请使用专升本后的新学号登录～"}
             result = {
-                "sid": info[0],
-                "name": info[1],
-                "college_name": _info[5],
-                "email": info[6],
-                "major_name": _info[7],
-                "class_name": _info[11],
-                "phone_number": info[7],
-                "domicile": info[5],
-                "political_status": info[4],
-                "national": info[3],
-                "enrollment_date": _info[9],
+                "studentId": pending_result["学号："],
+                "name": pending_result["姓名："],
+                # "birthDay": "无" if pending_result.get("出生日期：") == '' else pending_result["出生日期："],
+                # "idNumber": "无" if pending_result.get("证件号码：") == '' else pending_result["证件号码："],
+                # "candidateNumber": "无" if pending_result.get("考生号：") == '' else pending_result["考生号："],
+                # "status": "无" if pending_result.get("学籍状态：") == '' else pending_result["学籍状态："],
+                # "collegeName": "无" if pending_result.get("学院名称：") == '' else pending_result["学院名称："],
+                # "majorName": "无" if pending_result.get("专业名称：") == '' else pending_result["专业名称："],
+                # "className": "无" if pending_result.get("班级名称：") == '' else pending_result["班级名称："],
+                # "entryDate": "无" if pending_result.get("入学日期：") == '' else pending_result["入学日期："],
+                # "graduationSchool": "无" if pending_result.get("毕业中学：") == '' else pending_result["毕业中学："],
+                "domicile": "无" if pending_result.get("籍贯：") == '' else pending_result["籍贯："],
+                "phoneNumber": "无" if pending_result.get("手机号码：") == '' else pending_result["手机号码："],
+                "parentsNumber": "无",
+                "email": "无" if pending_result.get("电子邮箱：") == '' else pending_result["电子邮箱："],
+                "politicalStatus": "无" if pending_result.get("政治面貌：") == '' else pending_result["政治面貌："],
+                "national": "无" if pending_result.get("民族：") == '' else pending_result["民族："],
+                # "education": "无" if pending_result.get("培养层次：") == '' else pending_result["培养层次："],
+                # "postalCode": "无" if pending_result.get("邮政编码：") == '' else pending_result["邮政编码："],
+                "grade": int(pending_result["学号："][0:4]),
             }
             return {"code": 1000, "msg": "获取个人信息成功", "data": result}
         except exceptions.Timeout:
             return {"code": 1003, "msg": "获取个人信息超时"}
+        except (
+            exceptions.RequestException,
+            json.decoder.JSONDecodeError,
+            AttributeError,
+        ):
+            traceback.print_exc()
+            return {"code": 2333, "msg": "请重试，若多次失败可能是系统错误维护或需更新接口"}
         except Exception as e:
             traceback.print_exc()
             return {"code": 999, "msg": "获取个人信息时未记录的错误：" + str(e)}
@@ -1412,3 +1419,84 @@ class Client:
         except (TypeError, ValueError):
             pass
         return False
+
+
+if __name__ == "__main__":
+    from pprint import pprint
+    import json
+    import base64
+    import sys
+    import os
+
+    base_url = "https://xxxx.xxx.edu.cn" # 教务系统URL
+    sid = "123456"  # 学号
+    password = "abc654321"  # 密码
+    lgn_cookies = {
+        # "insert_cookie": "",
+        # "route": "",
+        "JSESSIONID": ""
+    } if False else None   # cookies登录，调整成True使用cookies登录，反之使用密码登录
+    test_year = 2022  # 查询学年
+    test_term = 2  # 查询学期（1-上|2-下）
+
+    # 初始化
+    lgn = Client(lgn_cookies if lgn_cookies is not None else {}, base_url=base_url)
+    # 判断是否需要使用cookies登录
+    if lgn_cookies is None:
+        # 登录
+        pre_login = lgn.login(sid, password)
+        # 判断登录结果
+        if pre_login["code"] == 1001:
+            # 需要验证码
+            pre_dict = pre_login["data"]
+            with open(os.path.abspath("temp.json"), mode="w", encoding="utf-8") as f:
+                f.write(json.dumps(pre_dict))
+            with open(os.path.abspath("kaptcha.png"), "wb") as pic:
+                pic.write(base64.b64decode(pre_dict["kaptcha_pic"]))
+            kaptcha = input("输入验证码：")
+            result = lgn.login_with_kaptcha(
+                pre_dict["sid"],
+                pre_dict["csrf_token"],
+                pre_dict["cookies"],
+                pre_dict["password"],
+                pre_dict["modulus"],
+                pre_dict["exponent"],
+                kaptcha,
+            )
+            if result["code"] != 1000:
+                pprint(result)
+                sys.exit()
+            lgn_cookies = lgn.cookies
+        elif pre_login["code"] == 1000:
+            # 不需要验证码，直接登录
+            lgn_cookies = lgn.cookies
+        else:
+            # 出错
+            pprint(pre_login)
+            sys.exit()
+
+    # 下面是各个函数调用，想调用哪个，取消注释即可
+    """ 获取个人信息 """
+    result = lgn.get_info_1()
+
+    """ 获取成绩单PDF """
+    # result = lgn.get_academia_pdf()
+    # if result["code"] == 1000:
+    #     with open(os.path.abspath("grade.pdf"), "wb") as pdf:
+    #         pdf.write(result["data"])
+    #         result = "已保存到本地"
+
+    """ 获取学业情况 """
+    # result = lgn.get_academia()
+
+    """ 获取GPA """
+    # result = lgn.get_gpa()
+
+    """ 获取课程表 """
+    # result = lgn.get_schedule(test_year, test_term)
+
+    """ 获取成绩 """
+    # result = lgn.get_grade(test_year, test_term)
+
+    # 输出结果
+    pprint(result)
