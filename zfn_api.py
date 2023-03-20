@@ -190,7 +190,7 @@ class Client:
             traceback.print_exc()
             return {"code": 999, "msg": "验证码登录时未记录的错误：" + str(e)}
 
-    def get_info(self, sid):
+    def get_info(self):
         """获取个人信息"""
         url = urljoin(self.base_url, "/xsxxxggl/xsxxwh_cxCkDgxsxx.html?gnmkdm=N100801")
         try:
@@ -206,21 +206,8 @@ class Client:
             if doc("h5").text() == "用户登录":
                 return {"code": 1006, "msg": "未登录或已过期，请重新登录"}
             info = req_info.json()
-
             if info is None:
-                _result = self._get_info(sid)
-                if _result["code"] == 2333:
-                    return {"code": 2333, "msg": _result["msg"]}
-                elif _result["code"] == 1003:
-                    return {"code": 1003, "msg": _result["msg"]}
-                elif _result["code"] == 999:
-                    return {"code": 999, "msg": _result["msg"]}
-                elif _result["code"] == 1000:
-                    return {
-                        "code": 1000,
-                        "msg": _result["msg"],
-                        "data": _result["data"],
-                    }
+                return self._get_info()
             result = {
                 "sid": info.get("xh"),
                 "name": info.get("xm"),
@@ -246,9 +233,9 @@ class Client:
         except exceptions.Timeout:
             return {"code": 1003, "msg": "获取个人信息超时"}
         except (
-            exceptions.RequestException,
-            json.decoder.JSONDecodeError,
-            AttributeError,
+                exceptions.RequestException,
+                json.decoder.JSONDecodeError,
+                AttributeError,
         ):
             traceback.print_exc()
             return {"code": 2333, "msg": "请重试，若多次失败可能是系统错误维护或需更新接口"}
@@ -256,20 +243,21 @@ class Client:
             traceback.print_exc()
             return {"code": 999, "msg": "获取个人信息时未记录的错误：" + str(e)}
 
-    def get_info_1(self):
+    def _get_info(self):
         """获取个人信息"""
         url = urljoin(self.base_url, "/xsxxxggl/xsgrxxwh_cxXsgrxx.html?gnmkdm=N100801")
         try:
             req_info = self.sess.get(
                 url, headers=self.headers, cookies=self.cookies, timeout=self.timeout
             )
+            if req_info.status_code != 200:
+                return {"code": 2333, "msg": "教务系统挂了"}
             doc = pq(req_info.text)
             if doc("h5").text() == "用户登录":
                 return {"code": 1006, "msg": "未登录或已过期，请重新登录"}
-            doc = pq(req_info.text)
             pending_result = {}
             # 学生基本信息
-            for ul_item in doc.find("div.row div.col-sm-6").items():
+            for ul_item in doc.find("div.col-sm-6").items():
                 content = pq(ul_item).find('div.form-group')
                 # key = re.findall(r'^[\u4E00-\u9FA5A-Za-z0-9]+', pq(content).find('label.col-sm-4.control-label').text())[0]
                 key = pq(content).find('label.col-sm-4.control-label').text()
@@ -277,36 +265,62 @@ class Client:
                 # 到这一步，解析到的数据基本就是一个键值对形式的html数据了，比如"[学号：]:123456"
                 pending_result[key] = value
             # 学生学籍信息，其他信息，联系方式
-            for ul_item in doc.find("div.row div.col-sm-4").items():
+            for ul_item in doc.find("div.col-sm-4").items():
                 content = pq(ul_item).find('div.form-group')
                 key = pq(content).find('label.col-sm-4.control-label').text()
                 value = pq(content).find('div.col-sm-8 p.form-control-static').text()
                 # 到这一步，解析到的数据基本就是一个键值对形式的html数据了，比如"[学号：]:123456"
                 pending_result[key] = value
-            if pending_result["学号："] == '':
-                return {"code": 1014, "msg": "当前学年学期无学生时盒数据，您可能已经毕业了。\n\n如果是专升本同学，请使用专升本后的新学号登录～"}
+            if pending_result.get("学号：") == '':
+                return {"code": 1014,
+                        "msg": "当前学年学期无学生时盒数据，您可能已经毕业了。\n\n如果是专升本同学，请使用专升本后的新学号登录～"}
             result = {
-                "studentId": pending_result["学号："],
+                "sid": pending_result["学号："],
                 "name": pending_result["姓名："],
-                # "birthDay": "无" if pending_result.get("出生日期：") == '' else pending_result["出生日期："],
-                # "idNumber": "无" if pending_result.get("证件号码：") == '' else pending_result["证件号码："],
-                # "candidateNumber": "无" if pending_result.get("考生号：") == '' else pending_result["考生号："],
+                # "birthday": "无" if pending_result.get("出生日期：") == '' else pending_result["出生日期："],
+                # "id_number": "无" if pending_result.get("证件号码：") == '' else pending_result["证件号码："],
+                # "candidate_number": "无" if pending_result.get("考生号：") == '' else pending_result["考生号："],
                 # "status": "无" if pending_result.get("学籍状态：") == '' else pending_result["学籍状态："],
-                # "collegeName": "无" if pending_result.get("学院名称：") == '' else pending_result["学院名称："],
-                # "majorName": "无" if pending_result.get("专业名称：") == '' else pending_result["专业名称："],
-                # "className": "无" if pending_result.get("班级名称：") == '' else pending_result["班级名称："],
-                # "entryDate": "无" if pending_result.get("入学日期：") == '' else pending_result["入学日期："],
-                # "graduationSchool": "无" if pending_result.get("毕业中学：") == '' else pending_result["毕业中学："],
+                # "entry_date": "无" if pending_result.get("入学日期：") == '' else pending_result["入学日期："],
+                # "graduation_school": "无" if pending_result.get("毕业中学：") == '' else pending_result["毕业中学："],
                 "domicile": "无" if pending_result.get("籍贯：") == '' else pending_result["籍贯："],
-                "phoneNumber": "无" if pending_result.get("手机号码：") == '' else pending_result["手机号码："],
-                "parentsNumber": "无",
+                "phone_number": "无" if pending_result.get("手机号码：") == '' else pending_result["手机号码："],
+                "parents_number": "无",
                 "email": "无" if pending_result.get("电子邮箱：") == '' else pending_result["电子邮箱："],
-                "politicalStatus": "无" if pending_result.get("政治面貌：") == '' else pending_result["政治面貌："],
+                "political_status": "无" if pending_result.get("政治面貌：") == '' else pending_result["政治面貌："],
                 "national": "无" if pending_result.get("民族：") == '' else pending_result["民族："],
                 # "education": "无" if pending_result.get("培养层次：") == '' else pending_result["培养层次："],
-                # "postalCode": "无" if pending_result.get("邮政编码：") == '' else pending_result["邮政编码："],
-                "grade": int(pending_result["学号："][0:4]),
+                # "postal_code": "无" if pending_result.get("邮政编码：") == '' else pending_result["邮政编码："],
+                # "grade": int(pending_result["学号："][0:4]),
             }
+            if pending_result.get("学院名称：") is not None:
+                # 如果在个人信息页面获取到了学院班级
+                result.update({
+                    "college_name": "无" if pending_result.get("学院名称：") == '' else pending_result["学院名称："],
+                    "major_name": "无" if pending_result.get("专业名称：") == '' else pending_result["专业名称："],
+                    "class_name": "无" if pending_result.get("班级名称：") == '' else pending_result["班级名称："]
+                })
+            else:
+                # 如果个人信息页面获取不到学院班级，则此处需要请求另外一个地址以获取学院、专业、班级等信息
+                _url = urljoin(self.base_url, "/xszbbgl/xszbbgl_cxXszbbsqIndex.html?doType=details&gnmkdm=N106005")
+                _req_info = self.sess.post(
+                    _url, headers=self.headers, cookies=self.cookies, timeout=self.timeout,
+                    data={"offDetails": '1', "gnmkdm": "N106005", "czdmKey": "00"}
+                )
+                _doc = pq(_req_info.text)
+                if _doc("p.error_title").text() != "无功能权限，":
+                    # 通过学生证补办申请入口，来补全部分信息
+                    for ul_item in _doc.find("div.col-sm-6").items():
+                        content = pq(ul_item).find('div.form-group')
+                        key = pq(content).find('label.col-sm-4.control-label').text() + '：'  # 为了保持格式一致，这里加个冒号
+                        value = pq(content).find('div.col-sm-8 label.control-label').text()
+                        # 到这一步，解析到的数据基本就是一个键值对形式的html数据了，比如"[学号：]:123456"
+                        pending_result[key] = value
+                    result.update({
+                        "college_name": "无" if pending_result.get("学院：") is None else pending_result["学院："],
+                        "major_name": "无" if pending_result.get("专业：") is None else pending_result["专业："],
+                        "class_name": "无" if pending_result.get("班级：") is None else pending_result["班级："],
+                    })
             return {"code": 1000, "msg": "获取个人信息成功", "data": result}
         except exceptions.Timeout:
             return {"code": 1003, "msg": "获取个人信息超时"}
@@ -1477,7 +1491,7 @@ if __name__ == "__main__":
 
     # 下面是各个函数调用，想调用哪个，取消注释即可
     """ 获取个人信息 """
-    result = lgn.get_info_1()
+    result = lgn.get_info()
 
     """ 获取成绩单PDF """
     # result = lgn.get_academia_pdf()
