@@ -6,6 +6,7 @@ import time
 import traceback
 import unicodedata
 from urllib.parse import urljoin
+
 import requests
 import rsa
 from pyquery import PyQuery as pq
@@ -47,12 +48,12 @@ class Client:
         self.kaptcha_url = urljoin(self.base_url, "kaptcha")
         self.headers = requests.utils.default_headers()
         self.headers["Referer"] = self.login_url
-        self.headers["User-Agent"] = (
-            "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36"
-        )
-        self.headers["Accept"] = (
-            "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3"
-        )
+        self.headers[
+            "User-Agent"
+        ] = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36"
+        self.headers[
+            "Accept"
+        ] = "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3"
         self.sess = requests.Session()
         self.sess.keep_alive = False
         self.cookies = cookies
@@ -100,11 +101,7 @@ class Client:
                         return {"code": 1002, "msg": "用户名或密码不正确"}
                     return {"code": 998, "msg": tips.text()}
                 self.cookies = self.sess.cookies.get_dict()
-                return {
-                    "code": 1000,
-                    "msg": "登录成功",
-                    "data": {"cookies": self.cookies},
-                }
+                return {"code": 1000, "msg": "登录成功", "data": {"cookies": self.cookies}}
             # 需要验证码，返回相关页面验证信息给用户，TODO: 增加更多验证方式
             need_verify = True
             req_kaptcha = self.sess.get(
@@ -134,10 +131,7 @@ class Client:
             AttributeError,
         ):
             traceback.print_exc()
-            return {
-                "code": 2333,
-                "msg": "请重试，若多次失败可能是系统错误维护或需更新接口",
-            }
+            return {"code": 2333, "msg": "请重试，若多次失败可能是系统错误维护或需更新接口"}
         except Exception as e:
             traceback.print_exc()
             msg = "获取验证码时未记录的错误" if need_verify else "登录时未记录的错误"
@@ -182,11 +176,7 @@ class Client:
                 }
                 self.cookies = route_cookies
             else:
-                return {
-                    "code": 1000,
-                    "msg": "登录成功",
-                    "data": {"cookies": self.cookies},
-                }
+                return {"code": 1000, "msg": "登录成功", "data": {"cookies": self.cookies}}
         except exceptions.Timeout:
             return {"code": 1003, "msg": "登录超时"}
         except (
@@ -195,10 +185,7 @@ class Client:
             AttributeError,
         ):
             traceback.print_exc()
-            return {
-                "code": 2333,
-                "msg": "请重试，若多次失败可能是系统错误维护或需更新接口",
-            }
+            return {"code": 2333, "msg": "请重试，若多次失败可能是系统错误维护或需更新接口"}
         except Exception as e:
             traceback.print_exc()
             return {"code": 999, "msg": "验证码登录时未记录的错误：" + str(e)}
@@ -251,10 +238,7 @@ class Client:
             AttributeError,
         ):
             traceback.print_exc()
-            return {
-                "code": 2333,
-                "msg": "请重试，若多次失败可能是系统错误维护或需更新接口",
-            }
+            return {"code": 2333, "msg": "请重试，若多次失败可能是系统错误维护或需更新接口"}
         except Exception as e:
             traceback.print_exc()
             return {"code": 999, "msg": "获取个人信息时未记录的错误：" + str(e)}
@@ -301,32 +285,22 @@ class Client:
                 # "status": "无" if pending_result.get("学籍状态：") == '' else pending_result["学籍状态："],
                 # "entry_date": "无" if pending_result.get("入学日期：") == '' else pending_result["入学日期："],
                 # "graduation_school": "无" if pending_result.get("毕业中学：") == '' else pending_result["毕业中学："],
-                "domicile": (
-                    "无"
-                    if pending_result.get("籍贯：") == ""
-                    else pending_result["籍贯："]
-                ),
-                "phone_number": (
-                    "无"
-                    if pending_result.get("手机号码：") == ""
-                    else pending_result["手机号码："]
-                ),
+                "domicile": "无"
+                if pending_result.get("籍贯：") == ""
+                else pending_result["籍贯："],
+                "phone_number": "无"
+                if pending_result.get("手机号码：") == ""
+                else pending_result["手机号码："],
                 "parents_number": "无",
-                "email": (
-                    "无"
-                    if pending_result.get("电子邮箱：") == ""
-                    else pending_result["电子邮箱："]
-                ),
-                "political_status": (
-                    "无"
-                    if pending_result.get("政治面貌：") == ""
-                    else pending_result["政治面貌："]
-                ),
-                "national": (
-                    "无"
-                    if pending_result.get("民族：") == ""
-                    else pending_result["民族："]
-                ),
+                "email": "无"
+                if pending_result.get("电子邮箱：") == ""
+                else pending_result["电子邮箱："],
+                "political_status": "无"
+                if pending_result.get("政治面貌：") == ""
+                else pending_result["政治面貌："],
+                "national": "无"
+                if pending_result.get("民族：") == ""
+                else pending_result["民族："],
                 # "education": "无" if pending_result.get("培养层次：") == '' else pending_result["培养层次："],
                 # "postal_code": "无" if pending_result.get("邮政编码：") == '' else pending_result["邮政编码："],
                 # "grade": int(pending_result["学号："][0:4]),
@@ -335,21 +309,15 @@ class Client:
                 # 如果在个人信息页面获取到了学院班级
                 result.update(
                     {
-                        "college_name": (
-                            "无"
-                            if pending_result.get("学院名称：") == ""
-                            else pending_result["学院名称："]
-                        ),
-                        "major_name": (
-                            "无"
-                            if pending_result.get("专业名称：") == ""
-                            else pending_result["专业名称："]
-                        ),
-                        "class_name": (
-                            "无"
-                            if pending_result.get("班级名称：") == ""
-                            else pending_result["班级名称："]
-                        ),
+                        "college_name": "无"
+                        if pending_result.get("学院名称：") == ""
+                        else pending_result["学院名称："],
+                        "major_name": "无"
+                        if pending_result.get("专业名称：") == ""
+                        else pending_result["专业名称："],
+                        "class_name": "无"
+                        if pending_result.get("班级名称：") == ""
+                        else pending_result["班级名称："],
                     }
                 )
             else:
@@ -381,21 +349,15 @@ class Client:
                         pending_result[key] = value
                     result.update(
                         {
-                            "college_name": (
-                                "无"
-                                if pending_result.get("学院：") is None
-                                else pending_result["学院："]
-                            ),
-                            "major_name": (
-                                "无"
-                                if pending_result.get("专业：") is None
-                                else pending_result["专业："]
-                            ),
-                            "class_name": (
-                                "无"
-                                if pending_result.get("班级：") is None
-                                else pending_result["班级："]
-                            ),
+                            "college_name": "无"
+                            if pending_result.get("学院：") is None
+                            else pending_result["学院："],
+                            "major_name": "无"
+                            if pending_result.get("专业：") is None
+                            else pending_result["专业："],
+                            "class_name": "无"
+                            if pending_result.get("班级：") is None
+                            else pending_result["班级："],
                         }
                     )
             return {"code": 1000, "msg": "获取个人信息成功", "data": result}
@@ -407,30 +369,24 @@ class Client:
             AttributeError,
         ):
             traceback.print_exc()
-            return {
-                "code": 2333,
-                "msg": "请重试，若多次失败可能是系统错误维护或需更新接口",
-            }
+            return {"code": 2333, "msg": "请重试，若多次失败可能是系统错误维护或需更新接口"}
         except Exception as e:
             traceback.print_exc()
             return {"code": 999, "msg": "获取个人信息时未记录的错误：" + str(e)}
 
-    def get_grade(self, year: int = 0, term: int = 0, use_personal_info: bool = False):
+    def get_grade(self, year: int, term: int = 0, use_personal_info: bool = False):
         """
         获取成绩
         use_personal_info: 是否使用获取个人信息接口获取成绩
         """
         url = urljoin(
             self.base_url,
-            (
-                "cjcx/cjcx_cxDgXscj.html?doType=query&gnmkdm=N305005"
-                if use_personal_info
-                else "cjcx/cjcx_cxXsgrcj.html?doType=query&gnmkdm=N305005"
-            ),
+            "cjcx/cjcx_cxDgXscj.html?doType=query&gnmkdm=N305005"
+            if use_personal_info
+            else "cjcx/cjcx_cxXsgrcj.html?doType=query&gnmkdm=N305005",
         )
         temp_term = term
         term = term**2 * 3
-        year = "" if year == 0 else year
         term = "" if term == 0 else term
         data = {
             "xnm": str(year),  # 学年数
@@ -480,10 +436,6 @@ class Client:
                         "grade_nature": i.get("ksxz"),
                         "start_college": i.get("kkbmmc"),
                         "mark": i.get("kcbj"),
-                        "submission_time": i.get("tjsj"),
-                        "name_of_submitter": i.get("tjrxm"),
-                        "xfjd": i.get("xfjd"),
-                        "percentage_grades": i.get("bfzcj"),
                     }
                     for i in grade_items
                 ],
@@ -497,10 +449,7 @@ class Client:
             AttributeError,
         ):
             traceback.print_exc()
-            return {
-                "code": 2333,
-                "msg": "请重试，若多次失败可能是系统错误维护或需更新接口",
-            }
+            return {"code": 2333, "msg": "请重试，若多次失败可能是系统错误维护或需更新接口"}
         except Exception as e:
             traceback.print_exc()
             return {"code": 999, "msg": "获取成绩时未记录的错误：" + str(e)}
@@ -567,10 +516,7 @@ class Client:
             AttributeError,
         ):
             traceback.print_exc()
-            return {
-                "code": 2333,
-                "msg": "请重试，若多次失败可能是系统错误维护或需更新接口",
-            }
+            return {"code": 2333, "msg": "请重试，若多次失败可能是系统错误维护或需更新接口"}
         except Exception as e:
             traceback.print_exc()
             return {"code": 999, "msg": "获取课表时未记录的错误：" + str(e)}
@@ -653,10 +599,7 @@ class Client:
             AttributeError,
         ):
             traceback.print_exc()
-            return {
-                "code": 2333,
-                "msg": "请重试，若多次失败可能是系统错误维护或需更新接口",
-            }
+            return {"code": 2333, "msg": "请重试，若多次失败可能是系统错误维护或需更新接口"}
         except Exception as e:
             traceback.print_exc()
             return {"code": 999, "msg": "获取学业情况时未记录的错误：" + str(e)}
@@ -793,10 +736,7 @@ class Client:
             AttributeError,
         ):
             traceback.print_exc()
-            return {
-                "code": 2333,
-                "msg": "请重试，若多次失败可能是系统错误维护或需更新接口",
-            }
+            return {"code": 2333, "msg": "请重试，若多次失败可能是系统错误维护或需更新接口"}
         except Exception as e:
             traceback.print_exc()
             return {"code": 999, "msg": "获取成绩总表pdf时未记录的错误：" + str(e)}
@@ -870,10 +810,7 @@ class Client:
             AttributeError,
         ):
             traceback.print_exc()
-            return {
-                "code": 2333,
-                "msg": "请重试，若多次失败可能是系统错误维护或需更新接口",
-            }
+            return {"code": 2333, "msg": "请重试，若多次失败可能是系统错误维护或需更新接口"}
         except Exception as e:
             traceback.print_exc()
             return {"code": 999, "msg": "获取课程表pdf时未记录的错误：" + str(e)}
@@ -919,25 +856,85 @@ class Client:
             AttributeError,
         ):
             traceback.print_exc()
-            return {
-                "code": 2333,
-                "msg": "请重试，若多次失败可能是系统错误维护或需更新接口",
-            }
+            return {"code": 2333, "msg": "请重试，若多次失败可能是系统错误维护或需更新接口"}
         except Exception as e:
             traceback.print_exc()
             return {"code": 999, "msg": "获取消息时未记录的错误：" + str(e)}
 
-    def get_selected_courses(self, year: int = 0, term: int = 0):
+    def get_selected_courses(self, year: int, term: int):
         """获取已选课程信息"""
+        try:
+            url = urljoin(
+                self.base_url,
+                "xsxk/zzxkyzb_cxZzxkYzbChoosedDisplay.html?gnmkdm=N253512",
+            )
+            temp_term = term
+            term = term**2 * 3
+            data = {"xkxnm": str(year), "xkxqm": str(term)}
+            req_selected = self.sess.post(
+                url,
+                data=data,
+                headers=self.headers,
+                cookies=self.cookies,
+                timeout=self.timeout,
+            )
+            if req_selected.status_code != 200:
+                return {"code": 2333, "msg": "教务系统挂了"}
+            doc = pq(req_selected.text)
+            if doc("h5").text() == "用户登录":
+                return {"code": 1006, "msg": "未登录或已过期，请重新登录"}
+            selected = req_selected.json()
+            result = {
+                "year": year,
+                "term": temp_term,
+                "count": len(selected),
+                "courses": [
+                    {
+                        "course_id": i.get("kch"),
+                        "class_id": i.get("jxb_id"),
+                        "do_id": i.get("do_jxb_id"),
+                        "title": i.get("kcmc"),
+                        "teacher_id": (re.findall(r"(.*?\d+)/", i.get("jsxx")))[0],
+                        "teacher": (re.findall(r"/(.*?)/", i.get("jsxx")))[0],
+                        "credit": float(i.get("xf", 0)),
+                        "category": i.get("kklxmc"),
+                        "capacity": int(i.get("jxbrs", 0)),
+                        "selected_number": int(i.get("yxzrs", 0)),
+                        "place": self.get_place(i.get("jxdd")),
+                        "time": self.get_course_time(i.get("sksj")),
+                        "optional": int(i.get("zixf", 0)),
+                        "waiting": i.get("sxbj"),
+                    }
+                    for i in selected
+                ],
+            }
+            return {"code": 1000, "msg": "获取已选课程成功", "data": result}
+        except exceptions.Timeout:
+            return {"code": 1003, "msg": "获取已选课程超时"}
+        except (
+            exceptions.RequestException,
+            json.decoder.JSONDecodeError,
+            AttributeError,
+        ):
+            traceback.print_exc()
+            return {"code": 2333, "msg": "请重试，若多次失败可能是系统错误维护或需更新接口"}
+        except Exception as e:
+            traceback.print_exc()
+            return {"code": 999, "msg": f"获取已选课程时未记录的错误：{str(e)}"}    
+
+    def get_selected_courses2(self, year: int = 0, term: int = 0):
+        """获取已选课程信息2"""
         try:
             url = urljoin(
                 self.base_url,
                 "/xsxxxggl/xsxxwh_cxXsxkxx.html?gnmkdm=N100801",
             )
-            temp_term = term
-            term = term**2 * 3
-            year = "" if year == 0 else year
-            term = "" if term == 0 else term
+            if (year == 0 or term == 0):
+                year = ""
+                term = ""
+            else:
+                temp_term = term
+                term = term**2 * 3
             data = {
                 "xnm": str(year),
                 "xqm": str(term),
@@ -964,26 +961,23 @@ class Client:
             result = {
                 "year": year,
                 "term": temp_term,
-                "count": len(selected),
+                "count": len(selected["items"]),
                 "courses": [
                     {
                         "course_id": i.get("kch"),
                         "class_id": i.get("jxb_id"),
-                        "do_id": i.get("do_jxb_id"),
                         "title": i.get("kcmc"),
                         "credit": float(i.get("xf", 0)),
-                        "category": i.get("kklxmc"),
-                        "capacity": int(i.get("jxbrs", 0)),
-                        "selected_number": int(i.get("yxzrs", 0)),
-                        "optional": int(i.get("zixf", 0)),
-                        "waiting": i.get("sxbj"),
+                        "teacher": i.get("jsxm"),
+                        "category": i.get("kclbmc"),
+                        "place": i.get("jxdd"),
                     }
                     for i in selected["items"]
                 ],
             }
-            return {"code": 1000, "msg": "获取已选课程成功", "data": result}
+            return {"code": 1000, "msg": "获取已选课程2成功", "data": result}
         except exceptions.Timeout:
-            return {"code": 1003, "msg": "获取已选课程超时"}
+            return {"code": 1003, "msg": "获取已选课程2超时"}
         except (
             exceptions.RequestException,
             json.decoder.JSONDecodeError,
@@ -996,7 +990,7 @@ class Client:
             }
         except Exception as e:
             traceback.print_exc()
-            return {"code": 999, "msg": f"获取已选课程时未记录的错误：{str(e)}"}
+            return {"code": 999, "msg": f"获取已选课程2时未记录的错误：{str(e)}"}
 
     def get_block_courses(self, year: int, term: int, block: int):
         """获取板块课选课列表"""
@@ -1164,10 +1158,7 @@ class Client:
             AttributeError,
         ):
             traceback.print_exc()
-            return {
-                "code": 2333,
-                "msg": "请重试，若多次失败可能是系统错误维护或需更新接口",
-            }
+            return {"code": 2333, "msg": "请重试，若多次失败可能是系统错误维护或需更新接口"}
         except Exception as e:
             traceback.print_exc()
             return {"code": 999, "msg": f"获取板块课信息时未记录的错误：{str(e)}"}
@@ -1227,10 +1218,7 @@ class Client:
             AttributeError,
         ):
             traceback.print_exc()
-            return {
-                "code": 2333,
-                "msg": "请重试，若多次失败可能是系统错误维护或需更新接口",
-            }
+            return {"code": 2333, "msg": "请重试，若多次失败可能是系统错误维护或需更新接口"}
         except Exception as e:
             traceback.print_exc()
             return {"code": 999, "msg": f"选课时未记录的错误：{str(e)}"}
@@ -1270,10 +1258,7 @@ class Client:
             AttributeError,
         ):
             traceback.print_exc()
-            return {
-                "code": 2333,
-                "msg": "请重试，若多次失败可能是系统错误维护或需更新接口",
-            }
+            return {"code": 2333, "msg": "请重试，若多次失败可能是系统错误维护或需更新接口"}
         except Exception as e:
             traceback.print_exc()
             return {"code": 999, "msg": f"选课时未记录的错误：{str(e)}"}
@@ -1320,7 +1305,7 @@ class Client:
         try:
             data_list = [(th.text).strip() for th in ths]
             return data_list[6]
-        except IndexError:
+        except:
             return None
 
     @classmethod
@@ -1491,9 +1476,7 @@ class Client:
                 ):
                     repetIndex.append(index)  # 满足条件记录索引
             count += 1  # 记录当前对比课程的索引
-        if (
-            len(repetIndex) % 2 != 0
-        ):  # 暂时考虑一天两个时段上同一门课，不满足条件不进行修改
+        if len(repetIndex) % 2 != 0:  # 暂时考虑一天两个时段上同一门课，不满足条件不进行修改
             return schedule
         for r in range(0, len(repetIndex), 2):  # 索引数组两两成对，故步进2循环
             fir = repetIndex[r]
@@ -1563,6 +1546,8 @@ class Client:
 
 if __name__ == "__main__":
     from pprint import pprint
+    import json
+    import base64
     import sys
     import os
 
