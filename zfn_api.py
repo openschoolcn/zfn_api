@@ -920,7 +920,77 @@ class Client:
             return {"code": 2333, "msg": "请重试，若多次失败可能是系统错误维护或需更新接口"}
         except Exception as e:
             traceback.print_exc()
-            return {"code": 999, "msg": f"获取已选课程时未记录的错误：{str(e)}"}
+            return {"code": 999, "msg": f"获取已选课程时未记录的错误：{str(e)}"}    
+
+    def get_selected_courses2(self, year: int = 0, term: int = 0):
+        """获取已选课程信息2"""
+        try:
+            url = urljoin(
+                self.base_url,
+                "/xsxxxggl/xsxxwh_cxXsxkxx.html?gnmkdm=N100801",
+            )
+            if (year == 0 or term == 0):
+                year = ""
+                term = ""
+            else:
+                temp_term = term
+                term = term**2 * 3
+            data = {
+                "xnm": str(year),
+                "xqm": str(term),
+                "_search": "false",
+                "queryModel.showCount": 5000,
+                "queryModel.currentPage": 1,
+                "queryModel.sortName": "",
+                "queryModel.sortOrder": "asc",
+                "time": 1,
+            }
+            req_selected = self.sess.post(
+                url,
+                data=data,
+                headers=self.headers,
+                cookies=self.cookies,
+                timeout=self.timeout,
+            )
+            if req_selected.status_code != 200:
+                return {"code": 2333, "msg": "教务系统挂了"}
+            doc = pq(req_selected.text)
+            if doc("h5").text() == "用户登录":
+                return {"code": 1006, "msg": "未登录或已过期，请重新登录"}
+            selected = req_selected.json()
+            result = {
+                "year": year,
+                "term": temp_term,
+                "count": len(selected["items"]),
+                "courses": [
+                    {
+                        "course_id": i.get("kch"),
+                        "class_id": i.get("jxb_id"),
+                        "title": i.get("kcmc"),
+                        "credit": float(i.get("xf", 0)),
+                        "teacher": i.get("jsxm"),
+                        "category": i.get("kclbmc"),
+                        "place": i.get("jxdd"),
+                    }
+                    for i in selected["items"]
+                ],
+            }
+            return {"code": 1000, "msg": "获取已选课程2成功", "data": result}
+        except exceptions.Timeout:
+            return {"code": 1003, "msg": "获取已选课程2超时"}
+        except (
+            exceptions.RequestException,
+            json.decoder.JSONDecodeError,
+            AttributeError,
+        ):
+            traceback.print_exc()
+            return {
+                "code": 2333,
+                "msg": "请重试，若多次失败可能是系统错误维护或需更新接口",
+            }
+        except Exception as e:
+            traceback.print_exc()
+            return {"code": 999, "msg": f"获取已选课程2时未记录的错误：{str(e)}"}
 
     def get_block_courses(self, year: int, term: int, block: int):
         """获取板块课选课列表"""
