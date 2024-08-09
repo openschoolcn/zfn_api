@@ -1328,10 +1328,11 @@ class Client:
         return int(digits)
 
     @classmethod
+    # 不做教师评价不给看成绩 服了
     def align_floats(cls, floats):
         if not floats:
             return None
-        if floats == "无":
+        if floats == "无" or floats == "未评价":
             return "0.0"
         return format(float(floats), ".1f")
 
@@ -1443,10 +1444,11 @@ class Client:
         """
         计算培养方案具体学期转化成中文
         note: 留级和当兵等情况会不准确
+        海经的学号格式前四位是入学年份 故修改Grade部分取第三第四位数据
         """
         if (sid and year and term) is None:
             return None
-        grade = int(sid[0:2])
+        grade = int(sid[2:4])
         year = int(year[2:4])
         term = int(term)
         dict = {
