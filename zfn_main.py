@@ -1,9 +1,9 @@
 import os
 import sys
 import json
-import notify
 import hashlib
-from zfn_api import Client
+from zfn_api import zfn_api
+from zfn_api import notify
 
 
 def str_to_md5(string):
@@ -50,7 +50,7 @@ print(f"读取到本地存储的Cookie: {cookies}")
 # 创建Client
 if cookies is None:
     cookies = {}
-stu = Client(cookies=cookies, base_url=os.getenv("ZF_URL"), raspisanie=[],
+stu = zfn_api.Client(cookies=cookies, base_url=os.getenv("ZF_URL"), raspisanie=[],
              ignore_type=[], detail_category_type=[], timeout=8, retry_times=3)
 
 if cookies == {}:
