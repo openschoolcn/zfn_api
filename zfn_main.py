@@ -2,8 +2,8 @@ import os
 import sys
 import json
 import hashlib
-from zfn_api import zfn_api
-from zfn_api import notify
+import zfn_api
+import notify
 
 
 def str_to_md5(string):
