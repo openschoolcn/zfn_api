@@ -3,7 +3,7 @@ import sys
 import json
 import hashlib
 from zfn_api import zfn_api
-from zfn_api import notify
+from zfn_api import sendNotify
 
 
 def str_to_md5(string):
@@ -81,4 +81,4 @@ else:
             with open(course_file_name, 'w') as json_file:
                 json.dump(courses, json_file)
 if len(msg) != 0:
-    notify.send(f"【正方推送】考试成绩变动提醒:" + "|".join(msg_short), "\n".join(msg))
+    sendNotify.send(f"【正方推送】考试成绩变动提醒:" + "|".join(msg_short), "\n".join(msg))
