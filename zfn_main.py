@@ -69,15 +69,18 @@ if result['code'] == 1006:  # 登录状态过期，下次运行自动重新登�
         json.dump({}, json_file)
     print('Cookie过期，已清除本地存储的Cookie')
 else:
-    for i in result['data']['courses']:
-        key_name = str_to_md5(f"{i['title']}_{i['course_id']}_{i['class_name']}_{i['teacher']}")
-        line_msg = f"【{i['nature']}】{i['title']}({i['teacher']}) | 课程得分: {i['grade']}分, 课程学分: {i['credit']}分, 绩点: {i['grade_point']}"
-        if key_name not in courses or courses[key_name] != str_to_md5(line_msg):
-            print(line_msg)
-            msg_short.append(i['title'])
-            msg.append(line_msg)
-            courses[key_name] = str_to_md5(line_msg)
-            with open(course_file_name, 'w') as json_file:
-                json.dump(courses, json_file)
+    if 'data' in result:
+        for i in result['data']['courses']:
+            key_name = str_to_md5(f"{i['title']}_{i['course_id']}_{i['class_name']}_{i['teacher']}")
+            line_msg = f"【{i['nature']}】{i['title']}({i['teacher']}) | 课程得分: {i['grade']}分, 课程学分: {i['credit']}分, 绩点: {i['grade_point']}"
+            if key_name not in courses or courses[key_name] != str_to_md5(line_msg):
+                print(line_msg)
+                msg_short.append(i['title'])
+                msg.append(line_msg)
+                courses[key_name] = str_to_md5(line_msg)
+                with open(course_file_name, 'w') as json_file:
+                    json.dump(courses, json_file)
+    else:
+        print('本学年暂无成绩数据。')
 if len(msg) != 0:
     QLAPI.notify(f"【正方推送】考试成绩变动提醒:" + "|".join(msg_short), "\n".join(msg))
