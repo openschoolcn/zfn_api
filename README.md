@@ -13,6 +13,7 @@
 - [x] 登录（自动识别是否需要验证码）
 - [x] 个人信息
 - [x] 成绩查询（两种接口）
+- [x] 考试信息查询
 - [x] 课表查询
 - [x] 课程表 PDF
 - [x] 学业生涯数据
@@ -62,7 +63,7 @@
     from zfn_api import Client
 
     cookies = {}
-    base_url = "https://xxx.com"
+    base_url = "https://xxx.com"  # 此处填写教务系统URL
     raspisanie = []
     ignore_type = []
     detail_category_type = []
@@ -71,7 +72,7 @@
     stu = Client(cookies=cookies, base_url=base_url, raspisanie=raspisanie, ignore_type=ignore_type, detail_category_type=detail_category_type, timeout=timeout)
 
     if cookies == {}:
-        lgn = stu.login("sid", "password")
+        lgn = stu.login("sid", "password")  # 此处填写账号及密码
         if lgn["code"] == 1001:
             verify_data = lgn["data"]
             with open(os.path.abspath("kaptcha.png"), "wb") as pic:
@@ -86,17 +87,18 @@
             pprint(lgn)
             sys.exit()
 
-    result = stu.get_info('sid')  # 获取个人信息
-    # result = stu.get_grade(2021, 2)  # 获取成绩信息，若接口错误请添加 use_personal_info=True，只填年份获取全年
-    # result = stu.get_schedule(2022, 1)  # 获取课程表信息
+    result = stu.get_info()  # 获取个人信息
+    # result = stu.get_grade(2024, 1)  # 获取成绩信息，若接口错误请添加 use_personal_info=True，只填年份获取全年
+    # result = stu.get_exam_schedule(2024, 1)  # 获取考试日程信息，只填年份获取全年
+    # result = stu.get_schedule(2024, 1)  # 获取课程表信息
     # result = stu.get_academia()  # 获取学业生涯数据
     # result = stu.get_notifications()  # 获取通知消息
-    # result = stu.get_selected_courses(2022, 1)  # 获取已选课程信息
-    # result = stu.get_block_courses(2021, 1, 1)  # 获取选课板块课列表
+    # result = stu.get_selected_courses(2024, 1)  # 获取已选课程信息
+    # result = stu.get_block_courses(2024, 1, 1)  # 获取选课板块课列表
     pprint(result, sort_dicts=False)
 
     # file_result = stu.get_academia_pdf()["data"]  # 获取学业生涯（学生成绩总表）PDF文件
-    file_result = stu.get_schedule_pdf(2022, 1)["data"]  # 获取课程表PDF文件
+    file_result = stu.get_schedule_pdf(2024, 1)["data"]  # 获取课程表PDF文件
     with open(os.path.abspath("preview.pdf"), "wb") as f:
         f.write(file_result)
 
@@ -144,7 +146,23 @@
   "capacity": "教学班容量",
   "selected_number": "已选人数",
   "optional": "是否自选",
-  "waiting": ""
+  "waiting": "",
+  // 考试日程
+  "course_id": "课程号",
+  "title": "课程名称",
+  "time": "考试时间",
+  "location": "考试地点",
+  "xq": "考试校区",
+  "zwh": "考试座号",
+  "cxbj": "重修标记",
+  "exam_name": "考试名称(如:2023-2024-1学期期末考试)",
+  "teacher": "任课教师",
+  "class_name": "教学班名称",
+  "kkxy": "开课学院",
+  "credit": "学分",
+  "ksfs": "考试方式(如:笔试,开卷,机考)",
+  "sjbh": "试卷编号",
+  "bz": "备注",
 }
 ```
 
