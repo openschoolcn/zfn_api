@@ -169,7 +169,7 @@ class Client:
                 return {"code": 998, "msg": tips.text()}
             self.cookies = self.sess.cookies.get_dict()
             # 不同学校系统兼容差异
-            if not self.cookies.get("route"):
+            if not self.cookies.get("route") and cookies.get("route"):
                 route_cookies = {
                     "JSESSIONID": self.cookies["JSESSIONID"],
                     "route": cookies["route"],
